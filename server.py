@@ -100,6 +100,13 @@ class CanopyHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type')
 
+    def end_headers(self):
+        # Disable caching for all responses during local dev
+        self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
+        self.send_header('Pragma', 'no-cache')
+        self.send_header('Expires', '0')
+        super().end_headers()
+
     def log_message(self, fmt, *args):
         # Slightly nicer logs
         sys.stderr.write(f'  {self.address_string()} - {fmt % args}\n')
