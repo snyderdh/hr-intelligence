@@ -26,6 +26,9 @@ function initFileInput() {
     g('fileInput').addEventListener('change', function (e) {
         const r = new FileReader();
         r.onload = ev => {
+            // Exit any active scenario when new data is loaded
+            if (isScenarioMode) exitScenarioMode();
+
             const rows = parseCSV(ev.target.result);
             const h = rows[0].map(s => s.trim().toLowerCase());
             const ci = k => h.indexOf(k);
@@ -70,6 +73,9 @@ function initFileInput() {
             deptCol = {};
             [...new Set(allData.filter(d => d.department).map(d => d.department))]
                 .forEach((d, i) => { deptCol[d] = PAL[i % PAL.length]; });
+
+            // Snapshot baseline before any scenario modifications
+            baselineData = JSON.parse(JSON.stringify(allData));
 
             resetAll();
         };

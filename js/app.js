@@ -121,6 +121,7 @@ function resetAll() {
     toggleEditUI();
     closeSpot();
     if (allData.length) { viewData = JSON.parse(JSON.stringify(allData)); refresh(true); }
+    if (typeof updateScenarioBanner === 'function') updateScenarioBanner();
 }
 
 // ── Initialisation ──

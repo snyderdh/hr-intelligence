@@ -43,3 +43,70 @@ const group = d => {
     if (allData.some(e => e.parentId === d.id && !e.isGhost)) return 'People Managers';
     return 'Individual Contributors';
 };
+
+// ── Scenario State ──
+let scenarios       = {};    // { id: { id, name, createdAt, description, data: [...] } }
+let currentScenarioId = null;
+let scenarioHistory   = [];  // [{ employeeId, previousParentId, newParentId, timestamp }]
+let scenarioRedoStack = [];
+let isScenarioMode    = false;
+let baselineData      = [];  // snapshot of allData at CSV load time
+
+// Load persisted scenarios on startup
+(function initScenarios() {
+    try {
+        const raw = localStorage.getItem('canopy_scenarios');
+        if (raw) scenarios = JSON.parse(raw);
+    } catch (e) { scenarios = {}; }
+})();
+
+function persistScenarios() {
+    try { localStorage.setItem('canopy_scenarios', JSON.stringify(scenarios)); } catch (e) {}
+}
+
+function saveScenario(name, description) {
+    const id = 'scn_' + Date.now();
+    scenarios[id] = {
+        id,
+        name:        name.trim(),
+        description: (description || '').trim(),
+        createdAt:   new Date().toISOString(),
+        data:        JSON.parse(JSON.stringify(allData)),
+    };
+    persistScenarios();
+    return id;
+}
+
+function loadScenario(id) {
+    const scn = scenarios[id];
+    if (!scn) return false;
+    currentScenarioId = id;
+    isScenarioMode    = true;
+    scenarioHistory   = [];
+    scenarioRedoStack = [];
+    allData  = JSON.parse(JSON.stringify(scn.data));
+    viewData = JSON.parse(JSON.stringify(allData));
+    deptCol  = {};
+    [...new Set(allData.filter(d => d.department).map(d => d.department))]
+        .forEach((d, i) => { deptCol[d] = PAL[i % PAL.length]; });
+    return true;
+}
+
+function deleteScenario(id) {
+    delete scenarios[id];
+    persistScenarios();
+}
+
+function exitScenarioMode() {
+    currentScenarioId = null;
+    isScenarioMode    = false;
+    scenarioHistory   = [];
+    scenarioRedoStack = [];
+    if (baselineData.length) {
+        allData  = JSON.parse(JSON.stringify(baselineData));
+        viewData = JSON.parse(JSON.stringify(allData));
+        deptCol  = {};
+        [...new Set(allData.filter(d => d.department).map(d => d.department))]
+            .forEach((d, i) => { deptCol[d] = PAL[i % PAL.length]; });
+    }
+}

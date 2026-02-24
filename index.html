@@ -36,9 +36,25 @@
             <button id="undoBtn" onclick="undoLastMove()" style="display:none;">↩ Undo Move</button>
         </div>
         <div id="topActions">
+            <button class="top-btn" onclick="toggleScenarioStudio()">🌿 Scenarios</button>
             <button class="top-btn" onclick="toggleControls()">⚙ Controls</button>
             <button class="top-btn accent" onclick="toggleDashboard()">📊 Dashboard</button>
             <button class="top-btn primary" onclick="toggleAI()">✦ Ask Claude</button>
+        </div>
+    </div>
+
+    <!-- SCENARIO BANNER (shown when a scenario is active) -->
+    <div id="scnBanner" style="display:none;">
+        <div class="scn-banner-info">
+            <span class="scn-banner-dot"></span>
+            <span class="scn-banner-label">Scenario Mode</span>
+            <span id="scnBannerName" class="scn-banner-name">—</span>
+        </div>
+        <div class="scn-banner-actions">
+            <button id="scnUndoBtn" class="btn scn-hist-btn" onclick="scnUndo()" disabled>↩ Undo</button>
+            <button id="scnRedoBtn" class="btn scn-hist-btn" onclick="scnRedo()" disabled>↪ Redo</button>
+            <button id="scnSaveBtn" class="btn scn-save-btn" onclick="scnSaveChanges()">Save Changes</button>
+            <button class="btn scn-exit-btn" onclick="scnExitToLive()">← Live Data</button>
         </div>
     </div>
 
@@ -251,7 +267,86 @@
 <datalist id="dynList"></datalist>
 <datalist id="destList"></datalist>
 
-<!-- Scripts: state → csv → chart → dashboard → ai → drag → app -->
+<!-- SCENARIO STUDIO PANEL -->
+<div id="scnPanel">
+    <div class="scn-panel-hdr">
+        <div class="scn-panel-title">
+            <span class="scn-panel-icon">🌿</span> Scenario Studio
+        </div>
+        <button class="scn-close-btn" onclick="toggleScenarioStudio()">×</button>
+    </div>
+    <div class="scn-panel-body">
+        <button class="scn-new-btn" onclick="showNewScnForm()">+ New Scenario</button>
+
+        <!-- New scenario form -->
+        <div id="scnFormWrap" style="display:none;">
+            <div class="scn-form">
+                <input  type="text"     id="scnNameInput" placeholder="Scenario name…"        style="margin-top:0;">
+                <textarea               id="scnDescInput" placeholder="Description (optional)…" rows="2" style="margin-top:7px;resize:none;"></textarea>
+                <div class="scn-form-btns">
+                    <button class="btn btn-green" onclick="saveNewScenario()">Save</button>
+                    <button class="btn btn-gray"  onclick="hideNewScnForm()">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <button id="scnCompareBtn" class="scn-compare-btn" style="display:none;" onclick="openCompareModal()">⇄ Compare Scenarios</button>
+        <button class="scn-live-btn" onclick="scnExitToLive()">← Return to Live Data</button>
+
+        <!-- Scenario list -->
+        <div class="scn-list-hdr">Saved Scenarios</div>
+        <div id="scnList"><div class="scn-empty">No saved scenarios yet.<br>Load a CSV and click <strong>+ New Scenario</strong> to start.</div></div>
+    </div>
+</div>
+
+<!-- SCENARIO COMPARISON MODAL -->
+<div id="compareModal" style="display:none;" onclick="if(event.target===this)closeCompareModal()">
+    <div class="compare-wrap">
+        <div class="compare-hdr">
+            <div class="compare-title">⇄ Scenario Comparison</div>
+            <button class="spot-x" onclick="closeCompareModal()">×</button>
+        </div>
+
+        <!-- Dropdowns -->
+        <div class="compare-selectors">
+            <div class="compare-selector-col">
+                <label class="compare-col-lbl">Scenario A</label>
+                <select id="compareLeft"  onchange="runComparison()"></select>
+            </div>
+            <div class="compare-vs">vs</div>
+            <div class="compare-selector-col">
+                <label class="compare-col-lbl">Scenario B</label>
+                <select id="compareRight" onchange="runComparison()"></select>
+            </div>
+        </div>
+
+        <div class="compare-body">
+            <!-- Summary diff table -->
+            <div class="compare-section-hdr">Summary</div>
+            <table class="diff-table">
+                <thead>
+                    <tr>
+                        <th class="diff-th-label">Metric</th>
+                        <th id="compareLeftHead"  class="diff-th-val">A</th>
+                        <th id="compareRightHead" class="diff-th-val">B</th>
+                        <th class="diff-th-delta">Delta</th>
+                    </tr>
+                </thead>
+                <tbody id="compareDiffBody"></tbody>
+            </table>
+
+            <!-- Manager changes -->
+            <div class="compare-changes-hdr">
+                <div class="compare-section-hdr" style="margin-bottom:0;">Manager Changes</div>
+                <button class="btn btn-gray" onclick="exportComparisonCSV()">↓ Export CSV</button>
+            </div>
+            <div id="compareChangesList"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts: state → csv → chart → dashboard → ai → drag → app → scenarios -->
 <script src="js/state.js"></script>
 <script src="js/csv.js"></script>
 <script src="js/chart.js"></script>
@@ -259,5 +354,6 @@
 <script src="js/ai.js"></script>
 <script src="js/drag.js"></script>
 <script src="js/app.js"></script>
+<script src="js/scenarios.js"></script>
 </body>
 </html>
