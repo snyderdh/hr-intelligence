@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl:*)",
+      "Bash(python3 -c \" import sys, re src = sys.stdin.read\\(\\) # Find the section where nodeContent is called and rendered idx = src.find\\(''nodeContent''\\) while idx != -1: snippet = src[max\\(0,idx-100\\):idx+200] if ''innerHTML'' in snippet or ''html\\('' in snippet or ''append'' in snippet.lower\\(\\): print\\(''---''\\) print\\(snippet\\) idx = src.find\\(''nodeContent'', idx+1\\) \")",
+      "Bash(python3:*)",
+      "Bash(pgrep:*)"
+    ]
+  }
+}
