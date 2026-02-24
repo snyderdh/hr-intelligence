@@ -1,0 +1,101 @@
+Full Name,Title,Manager (name),Department,Salary,Job Level,Start Date,2025 Mid-Year Rating,Work Email,City,State/Cty.
+Jordan Smith,Chief Executive Officer,,Executive,520000,C-Level,01/10/2018,5,jordan.s@company.com,Denver,CO
+Alex Rivera,Chief Technology Officer,Jordan Smith,Executive,380000,C-Level,03/15/2019,4,alex.r@company.com,Austin,TX
+Elena Rodriguez,Chief Revenue Officer,Jordan Smith,Executive,375000,C-Level,01/20/2020,4,elena.r@company.com,Miami,FL
+Linda Belcher,Chief People Officer,Jordan Smith,Executive,310000,C-Level,04/12/2019,5,linda.b@company.com,Denver,CO
+Angela Martin,Chief Financial Officer,Jordan Smith,Executive,340000,C-Level,03/03/2019,4,angela.m@company.com,Denver,CO
+Sarah Chen,VP of Engineering,Alex Rivera,Engineering,285000,VP,06/22/2020,5,sarah.c@company.com,San Francisco,CA
+James Wilson,VP of Product,Alex Rivera,Product,270000,VP,07/15/2020,4,j.wilson@company.com,Austin,TX
+Marcus Thorne,VP of Sales,Elena Rodriguez,Sales,265000,VP,07/12/2021,5,marcus.t@company.com,Chicago,IL
+Robert California,VP of Marketing,Elena Rodriguez,Marketing,255000,VP,09/01/2021,3,r.cali@company.com,New York,NY
+Toby Flenderson,VP of HR,Linda Belcher,HR,210000,VP,02/10/2021,2,toby.f@company.com,Scranton,PA
+Oscar Martinez,VP of Finance,Angela Martin,Finance,245000,VP,05/15/2020,5,oscar.m@company.com,Denver,CO
+Michael Scott,Engineering Manager,Sarah Chen,Engineering,195000,M2,11/05/2021,3,michael.s@company.com,Scranton,PA
+Patty Miller,Engineering Manager,Sarah Chen,Engineering,190000,M2,01/12/2022,4,p.miller@company.com,Austin,TX
+Dwight Schrute,Senior Lead Dev,Michael Scott,Engineering,165000,IC4,02/14/2022,5,dwight.s@company.com,Scranton,PA
+Jim Halpert,Fullstack Dev,Michael Scott,Engineering,135000,IC3,05/10/2022,4,jim.h@company.com,Scranton,PA
+Pam Beesly,Frontend Dev,Michael Scott,Engineering,115000,IC2,08/30/2022,4,pam.b@company.com,Scranton,PA
+Ryan Howard,Junior Dev,Michael Scott,Engineering,92000,IC1,10/01/2023,2,ryan.h@company.com,New York,NY
+Stanley Hudson,Backend Dev,Michael Scott,Engineering,130000,IC3,11/15/2021,3,stanley.h@company.com,Scranton,PA
+Phyllis Vance,QA Engineer,Michael Scott,Engineering,125000,IC3,12/01/2021,4,phyllis.v@company.com,Scranton,PA
+Meredith Palmer,DevOps Eng,Michael Scott,Engineering,140000,IC3,03/20/2022,3,meredith.p@company.com,Scranton,PA
+Creed Bratton,Security Eng,Michael Scott,Engineering,145000,IC4,04/01/2022,3,creed.b@company.com,Scranton,PA
+Kevin Malone,Junior QA,Michael Scott,Engineering,85000,IC1,05/10/2023,2,kevin.m@company.com,Scranton,PA
+Andy Bernard,Sales Manager,Marcus Thorne,Sales,170000,M1,06/15/2021,3,andy.b@company.com,Stamford,CT
+Kelly Kapoor,Customer Success Mgr,Marcus Thorne,CS,155000,M1,09/15/2023,4,kelly.k@company.com,Chicago,IL
+Todd Packer,Sales Lead,Andy Bernard,Sales,150000,IC4,01/05/2022,1,todd.p@company.com,Field,NY
+Danny Cordray,Sales Associate,Andy Bernard,Sales,110000,IC2,02/10/2022,5,danny.c@company.com,Atlanta,GA
+Clark Green,Sales Associate,Andy Bernard,Sales,95000,IC2,03/15/2023,4,clark.g@company.com,Denver,CO
+Pete Miller,Sales Associate,Andy Bernard,Sales,92000,IC2,03/15/2023,4,pete.m@company.com,Denver,CO
+Karen Filippelli,Sales Associate,Andy Bernard,Sales,115000,IC3,04/20/2021,5,karen.f@company.com,Utica,NY
+Lonny Collins,CS Associate,Kelly Kapoor,CS,90000,IC2,01/10/2022,4,lonny.c@company.com,Chicago,IL
+Madge Madsen,CS Associate,Kelly Kapoor,CS,88000,IC2,02/15/2022,3,madge.m@company.com,Chicago,IL
+Gabe Lewis,Product Manager,James Wilson,Product,165000,M1,05/20/2021,4,gabe.l@company.com,Tallahassee,FL
+Nellie Bertram,Senior PM,Gabe Lewis,Product,155000,IC3,08/10/2022,3,nellie.b@company.com,London,UK
+Darryl Philbin,Operations Mgr,Linda Belcher,Operations,175000,M2,04/05/2019,5,darryl.p@company.com,Denver,CO
+Roy Anderson,Logistics Lead,Darryl Philbin,Operations,110000,IC3,09/10/2020,3,roy.a@company.com,Denver,CO
+Val Johnson,Warehouse Lead,Darryl Philbin,Operations,105000,IC3,10/12/2021,4,val.j@company.com,Denver,CO
+Glenn Black,Logistics,Roy Anderson,Operations,85000,IC1,01/20/2023,4,glenn.b@company.com,Denver,CO
+Hidetoshi Hasagawa,Logistics,Roy Anderson,Operations,87000,IC1,02/25/2023,5,hide.h@company.com,Denver,CO
+Dakota Fanning,Logistics,Roy Anderson,Operations,82000,IC1,03/05/2023,3,dakota.f@company.com,Denver,CO
+Nate Nickerson,Operations Support,Darryl Philbin,Operations,75000,IC1,04/15/2023,5,nate.n@company.com,Denver,CO
+Deangelo Vickers,Marketing Mgr,Robert California,Marketing,180000,M2,05/10/2022,2,deangelo@company.com,New York,NY
+Erin Hannon,Comms Associate,Deangelo Vickers,Marketing,85000,IC2,06/15/2022,5,erin.h@company.com,New York,NY
+Jo Bennett,Senior Director,Oscar Martinez,Finance,215000,M2,01/10/2019,5,jo.b@company.com,Denver,CO
+David Wallace,Finance Manager,Oscar Martinez,Finance,185000,M1,02/20/2019,4,david.w@company.com,Denver,CO
+Charles Miner,Operations Director,Sarah Chen,Operations,205000,M2,03/15/2021,4,charles.m@company.com,Denver,CO
+Jan Levinson,Strategy Lead,Angela Martin,Executive,220000,M1,04/10/2018,3,jan.l@company.com,New York,NY
+Holly Flax,HR Specialist,Toby Flenderson,HR,125000,IC3,05/15/2021,5,holly.f@company.com,Nashua,NH
+Hank Tate,Security Lead,Linda Belcher,Executive,115000,IC3,06/20/2019,4,hank.t@company.com,Denver,CO
+Billy Merchant,Facilities,Linda Belcher,Executive,95000,IC2,07/25/2019,4,billy.m@company.com,Denver,CO
+Elizabeth The Stripper,Events,Linda Belcher,HR,85000,IC1,08/30/2023,5,elizabeth@company.com,Denver,CO
+Bob Vance,Sales Partner,Marcus Thorne,Sales,145000,IC4,09/05/2020,4,bob.v@company.com,Scranton,PA
+Sadiq Khan,Network Eng,Patty Miller,Engineering,135000,IC3,10/10/2022,4,sadiq.k@company.com,Austin,TX
+Jordan Sparks,Software Eng,Patty Miller,Engineering,125000,IC2,11/15/2022,4,j.sparks@company.com,Austin,TX
+Troy Underbridge,Software Eng,Patty Miller,Engineering,110000,IC2,12/20/2022,3,troy.u@company.com,Austin,TX
+Zack Sawyer,Software Eng,Patty Miller,Engineering,105000,IC2,01/25/2023,4,zack.s@company.com,Austin,TX
+Casey Dean,Software Eng,Patty Miller,Engineering,102000,IC2,02/28/2023,4,casey.d@company.com,Austin,TX
+Alex Cooper,Software Eng,Patty Miller,Engineering,98000,IC1,03/15/2023,5,alex.c@company.com,Austin,TX
+Riley Reed,Software Eng,Patty Miller,Engineering,95000,IC1,04/20/2023,4,riley.r@company.com,Austin,TX
+Sam Bennett,Software Eng,Patty Miller,Engineering,92000,IC1,05/25/2023,3,sam.b@company.com,Austin,TX
+Taylor Swift,Software Eng,Patty Miller,Engineering,91000,IC1,06/30/2023,5,taylor.s@company.com,Austin,TX
+Chris Evans,Data Scientist,Patty Miller,Engineering,145000,IC3,07/05/2022,4,chris.e@company.com,Austin,TX
+Scarlett J,Data Scientist,Patty Miller,Engineering,140000,IC3,08/10/2022,5,scarlett@company.com,Austin,TX
+Jeremy Renner,Data Analyst,Patty Miller,Engineering,105000,IC2,09/15/2022,4,jeremy.r@company.com,Austin,TX
+Don Cheadle,Data Analyst,Patty Miller,Engineering,102000,IC2,10/20/2022,4,don.c@company.com,Austin,TX
+Mark Ruffalo,Data Analyst,Patty Miller,Engineering,98000,IC1,11/25/2022,3,mark.r@company.com,Austin,TX
+Paul Rudd,UI Designer,Gabe Lewis,Product,125000,IC3,12/30/2021,5,paul.r@company.com,Tallahassee,FL
+Evangeline L,UX Designer,Gabe Lewis,Product,115000,IC2,01/05/2022,4,evie.l@company.com,Tallahassee,FL
+Brie Larson,UX Researcher,Gabe Lewis,Product,110000,IC2,02/10/2022,4,brie.l@company.com,Tallahassee,FL
+Tom Holland,Junior PM,Gabe Lewis,Product,95000,IC1,03/15/2023,5,tom.h@company.com,Tallahassee,FL
+Zendaya C,Junior PM,Gabe Lewis,Product,97000,IC1,04/20/2023,5,z.c@company.com,Tallahassee,FL
+Benedict C,Technical Writer,Gabe Lewis,Product,105000,IC2,05/25/2022,4,ben.c@company.com,Tallahassee,FL
+Tessa Thompson,Product Marketing,Deangelo Vickers,Marketing,135000,IC3,06/30/2022,4,tessa.t@company.com,New York,NY
+Taika Waititi,Creative Lead,Deangelo Vickers,Marketing,155000,IC4,07/05/2021,5,taika.w@company.com,New York,NY
+Jeff Goldblum,Content Strategist,Deangelo Vickers,Marketing,125000,IC3,08/10/2021,5,jeff.g@company.com,New York,NY
+Cate Blanchett,Social Media,Deangelo Vickers,Marketing,95000,IC2,09/15/2022,4,cate.b@company.com,New York,NY
+Karl Urban,SEO Specialist,Deangelo Vickers,Marketing,92000,IC2,10/20/2022,3,karl.u@company.com,New York,NY
+Jack Quaid,Marketing Analyst,Deangelo Vickers,Marketing,88000,IC1,11/25/2022,4,jack.q@company.com,New York,NY
+Antony Starr,Brand Manager,Deangelo Vickers,Marketing,145000,IC3,12/30/2021,2,antony.s@company.com,New York,NY
+Erin Moriarty,Marketing Coord,Deangelo Vickers,Marketing,78000,IC1,01/05/2023,5,erin.m@company.com,New York,NY
+Dominique M,PR Lead,Deangelo Vickers,Marketing,130000,IC3,02/10/2022,4,dom.m@company.com,New York,NY
+Jessie Usher,Marketing Associate,Deangelo Vickers,Marketing,75000,IC1,03/15/2023,3,jessie.u@company.com,New York,NY
+Laz Alonso,Copywriter,Deangelo Vickers,Marketing,95000,IC2,04/20/2022,4,laz.a@company.com,New York,NY
+Tomer Capone,Video Producer,Deangelo Vickers,Marketing,105000,IC3,05/25/2022,4,tomer.c@company.com,New York,NY
+Karen Fukuhara,Sales Support,Andy Bernard,Sales,82000,IC1,06/30/2023,5,karen.fu@company.com,Utica,NY
+Giancarlo E,Sales Ops,Marcus Thorne,Sales,165000,M1,07/05/2021,5,gian@company.com,Chicago,IL
+Jonathan Banks,Collections,Oscar Martinez,Finance,115000,IC3,08/10/2020,4,jon.b@company.com,Denver,CO
+Rhea Seehorn,Audit Lead,Oscar Martinez,Finance,145000,IC4,09/15/2020,5,rhea.s@company.com,Denver,CO
+Patrick Fabian,Finance Analyst,David Wallace,Finance,105000,IC2,10/20/2021,3,patrick.f@company.com,Denver,CO
+Michael Mando,Finance Analyst,David Wallace,Finance,102000,IC2,11/25/2021,4,michael.m@company.com,Denver,CO
+Tony Dalton,Tax Specialist,David Wallace,Finance,135000,IC3,12/30/2021,5,tony.d@company.com,Denver,CO
+Bob Odenkirk,Legal Counsel,Jordan Smith,Executive,285000,VP,01/05/2019,4,saul.g@company.com,Albuquerque,NM
+Bryan Cranston,Facilities Mgr,Linda Belcher,Operations,165000,M1,02/10/2020,5,bryan.c@company.com,Denver,CO
+Aaron Paul,Facilities Lead,Bryan Cranston,Operations,95000,IC2,03/15/2021,4,aaron.p@company.com,Denver,CO
+Anna Gunn,Office Manager,Bryan Cranston,Operations,92000,IC2,04/20/2021,4,anna.g@company.com,Denver,CO
+Dean Norris,Security,Bryan Cranston,Operations,88000,IC1,05/25/2022,5,dean.n@company.com,Denver,CO
+Betsy Brandt,Office Admin,Bryan Cranston,Operations,72000,IC1,06/30/2022,4,betsy.b@company.com,Denver,CO
+RJ Mitte,Office Support,Bryan Cranston,Operations,65000,IC1,07/05/2023,4,rj.m@company.com,Denver,CO
+Bob Vance,Sales Associate,Andy Bernard,Sales,125000,IC3,08/10/2020,5,bob.v@company.com,Scranton,PA
+Stanley Hudson,Sales Associate,Andy Bernard,Sales,115000,IC3,09/15/2020,3,stan.h@company.com,Scranton,PA
+Phyllis Lapin,Sales Associate,Andy Bernard,Sales,110000,IC3,10/20/2020,4,phyllis.l@company.com,Scranton,PA

@@ -43,7 +43,7 @@ function refresh(fit = false) {
         .compact(true)
         .nodeContent(d => {
             if (d.data.isGhost) {
-                return `<div style="padding:10px 14px;background:#0d1525;border:1px solid rgba(255,255,255,0.08);color:#64748b;border-radius:10px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;">${d.data.name}</div>`;
+                return `<div style="padding:10px 14px;background:#f5f3ef;border:1px solid #e8e4dc;color:#6b6880;border-radius:14px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;font-family:'Nunito',sans-serif;">${d.data.name}</div>`;
             }
             const col  = deptCol[d.data.department] || '#64748b';
             // Convert #rrggbb → rgba(r,g,b,0.09) for the dept pill background
@@ -52,27 +52,27 @@ function refresh(fit = false) {
                 const r = parseInt(h.slice(0,2),16), gg = parseInt(h.slice(2,4),16), b = parseInt(h.slice(4,6),16);
                 return `rgba(${r},${gg},${b},${a})`;
             };
-            const colBg = hexToRgba(col, 0.09);
+            const colBg = hexToRgba(col, 0.1);
             const r    = pRat(d.data.rating);
             let rbar = '';
             if (r !== 'NR') {
                 let dots = '';
-                for (let i = 0; i < r;     i++) dots += `<div style="width:7px;height:2px;border-radius:1px;background:${col};opacity:0.8;"></div>`;
-                for (let i = r; i < 5;     i++) dots += `<div style="width:7px;height:2px;border-radius:1px;background:rgba(255,255,255,0.1);"></div>`;
+                for (let i = 0; i < r;     i++) dots += `<div style="width:7px;height:2px;border-radius:1px;background:${col};opacity:0.9;"></div>`;
+                for (let i = r; i < 5;     i++) dots += `<div style="width:7px;height:2px;border-radius:1px;background:#e8e4dc;"></div>`;
                 rbar = `<div style="display:flex;gap:2px;margin-top:5px;">${dots}</div>`;
             }
             // Use numeric index as data-nid value — plain integers pass content filters
             const nidIdx = window._nidRev[d.data.id];
             return `<div data-nid="${nidIdx}" onclick="window.spotById('${d.data.id.replace(/'/g, "\\'")}')"
-                style="position:relative;cursor:pointer;padding:9px 11px 9px 14px;background:#111827;border-left:3px solid ${col};border-radius:10px;height:64px;border:1px solid rgba(255,255,255,0.07);border-left:3px solid ${col};box-shadow:0 3px 10px rgba(0,0,0,0.35);transition:box-shadow 0.18s;"
-                onmouseenter="this.style.boxShadow='0 5px 18px rgba(0,0,0,0.55)'"
-                onmouseleave="this.style.boxShadow='0 3px 10px rgba(0,0,0,0.35)'">
-                ${d.data._hc > 0 ? `<div style="position:absolute;top:-8px;right:-8px;background:#1e293b;color:${col};border:2px solid #080c14;border-radius:50%;width:19px;height:19px;font-size:8px;font-weight:800;display:flex;align-items:center;justify-content:center;">${d.data._hc}</div>` : ''}
-                <div style="font-weight:700;font-size:11px;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.data.name}</div>
-                <div style="font-size:9px;color:#64748b;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.data.title}</div>
+                style="position:relative;cursor:pointer;padding:9px 11px 9px 14px;background:#ffffff;border-left:3px solid ${col};border-radius:14px;height:64px;border:1px solid #e8e4dc;border-left:3px solid ${col};box-shadow:0 2px 8px rgba(180,160,130,0.13),0 1px 3px rgba(180,160,130,0.08);transition:box-shadow 0.18s,transform 0.12s;font-family:'Nunito',sans-serif;"
+                onmouseenter="this.style.boxShadow='0 6px 20px rgba(180,160,130,0.22),0 2px 6px rgba(180,160,130,0.12)';this.style.transform='translateY(-1px)'"
+                onmouseleave="this.style.boxShadow='0 2px 8px rgba(180,160,130,0.13),0 1px 3px rgba(180,160,130,0.08)';this.style.transform='none'">
+                ${d.data._hc > 0 ? `<div style="position:absolute;top:-8px;right:-8px;background:${col};color:#fff;border:2px solid #fafaf7;border-radius:50%;width:20px;height:20px;font-size:8px;font-weight:800;display:flex;align-items:center;justify-content:center;font-family:'Nunito',sans-serif;">${d.data._hc}</div>` : ''}
+                <div style="font-weight:800;font-size:11px;color:#1a1a2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.data.name}</div>
+                <div style="font-size:9px;color:#6b6880;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;">${d.data.title}</div>
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
-                    <div style="font-size:8px;color:${col};background:${colBg};padding:1px 6px;border-radius:4px;font-weight:700;">${d.data.department}</div>
-                    <span style="font-size:8px;color:#475569;font-weight:700;">${d.data.jobLevel || ''}</span>
+                    <div style="font-size:8px;color:${col};background:${colBg};padding:1px 7px;border-radius:50px;font-weight:800;">${d.data.department}</div>
+                    <span style="font-size:8px;color:#6b6880;font-weight:700;">${d.data.jobLevel || ''}</span>
                 </div>${rbar}</div>`;
         })
         .render();

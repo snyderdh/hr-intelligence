@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HR Intelligence Suite</title>
+    <title>Canopy</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/d3-org-chart@2.6.0"></script>
@@ -18,8 +20,12 @@
     <!-- TOP BAR -->
     <div id="topBar">
         <div class="brand">
-            <div class="brand-icon">HR</div>
-            <div class="brand-name">Intelligence <span>Suite</span></div>
+            <div class="brand-icon">
+                <svg class="brand-tree" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 3 L19 11 H15 L19 17 H13.5 L13.5 21 H10.5 L10.5 17 H5 L9 11 H5 Z" fill="white" opacity="0.95"/>
+                </svg>
+            </div>
+            <div class="brand-name">Canopy</div>
         </div>
         <div id="statPills">
             <div class="stat-pill"><span class="pill-val" id="statHC">—</span><span class="pill-lbl">Headcount</span></div>
@@ -122,8 +128,8 @@
     <div id="dashInner">
         <div class="dash-top">
             <div>
-                <div class="dash-hl">Executive <span>Intelligence</span></div>
-                <div class="dash-sub">Workforce analytics &amp; modeling engine</div>
+                <div class="dash-hl">Canopy <span>Analytics</span></div>
+                <div class="dash-sub">Workforce intelligence &amp; org modeling</div>
                 <div class="dash-filters">
                     <select id="dDept" onchange="dashFilter('dept')" style="margin-top:0;width:auto;"><option value="">All Departments</option></select>
                     <select id="dMgr"  onchange="dashFilter('team')" style="margin-top:0;width:auto;"><option value="">All Teams</option></select>
@@ -204,7 +210,7 @@
         <div class="ai-hdr-row">
             <div class="ai-brand">
                 <div class="ai-icon">✦</div>
-                <div><div class="ai-ttl">Claude AI</div><div class="ai-sub">Workforce Intelligence Assistant</div></div>
+                <div><div class="ai-ttl">Claude AI</div><div class="ai-sub">Canopy Intelligence Assistant</div></div>
             </div>
             <div class="ai-xbtn" onclick="toggleAI()">×</div>
         </div>
