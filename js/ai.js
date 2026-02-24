@@ -99,7 +99,7 @@ async function sendAI() {
     showTyping();
 
     try {
-        const res = await fetch('https://api.anthropic.com/v1/messages', {
+        const res = await fetch('/api/claude', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -118,13 +118,13 @@ async function sendAI() {
             aiHist.push({ role: 'assistant', content: reply });
             if (aiHist.length > 20) aiHist = aiHist.slice(-20);
         } else if (data.error) {
-            addMsg('assistant', `API error: ${data.error.message}. Check that your environment proxies requests to the Anthropic API.`);
+            addMsg('assistant', `Error: ${data.error.message}`);
         } else {
             addMsg('assistant', 'No response received. Please try again.');
         }
     } catch (err) {
         hideTyping();
-        addMsg('assistant', 'Connection failed. The Anthropic API cannot be called directly from the browser due to CORS — this app needs a proxy or backend to forward requests.');
+        addMsg('assistant', 'Request failed. Please try again.');
         console.error('AI error:', err);
     }
 
