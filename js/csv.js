@@ -90,11 +90,17 @@ const COLUMN_ALIASES = {
     'date of hire': 'startDate',
     'last increase date': 'lastPayIncrease', 'last raise date': 'lastPayIncrease',
     'last pay increase': 'lastPayIncrease',
-    // Pay bands
-    'bandmax': 'bandMax', 'band max': 'bandMax', 'max': 'bandMax',
-    'bandmin': 'bandMin', 'band min': 'bandMin', 'min': 'bandMin',
-    'q1': 'bandQ1', 'q3': 'bandQ3', 'bandq1': 'bandQ1', 'bandq3': 'bandQ3',
-    'mid': 'bandMid', 'midpoint': 'bandMid', 'band mid': 'bandMid',
+    // Pay bands (include underscore variants and explicit mixed-case keys;
+    //            normaliseHeaders() lowercases before lookup so these are
+    //            here for completeness and forward safety)
+    'bandmax': 'bandMax', 'band max': 'bandMax', 'band_max': 'bandMax', 'max': 'bandMax',
+    'BandMax': 'bandMax',
+    'bandmin': 'bandMin', 'band min': 'bandMin', 'band_min': 'bandMin', 'min': 'bandMin',
+    'BandMin': 'bandMin',
+    'bandmid': 'bandMid', 'band mid': 'bandMid', 'band_mid': 'bandMid',
+    'BandMid': 'bandMid', 'mid': 'bandMid', 'midpoint': 'bandMid',
+    'q1': 'bandQ1', 'Q1': 'bandQ1', 'bandq1': 'bandQ1', 'band_q1': 'bandQ1',
+    'q3': 'bandQ3', 'Q3': 'bandQ3', 'bandq3': 'bandQ3', 'band_q3': 'bandQ3',
     // Rating
     'performance rating': 'rating', 'perf rating': 'rating', 'review score': 'rating',
     'performance score': 'rating', 'annual review': 'rating',
@@ -106,15 +112,23 @@ const COLUMN_ALIASES = {
     // State / region
     'state/cty.': 'state', 'province': 'state', 'region': 'state',
     // Geo tier
-    'geo tier': 'geoTier', 'geo': 'geoTier', 'tier': 'geoTier',
+    'geo tier': 'geoTier', 'geotier': 'geoTier', 'geo_tier': 'geoTier',
+    'GeoTier': 'geoTier', 'geo': 'geoTier', 'tier': 'geoTier',
     // Compa-ratio
     'compa ratio': 'compaRatio', 'compa-ratio': 'compaRatio',
 };
 
 function normaliseHeaders(headers) {
-    return headers.map(h => {
-        const lower = h.trim().toLowerCase();
-        return COLUMN_ALIASES[lower] || h.trim();
+    // Build a fully-lowercase lookup so matching is always case-insensitive,
+    // even if a COLUMN_ALIASES key was accidentally added with mixed case.
+    const lowerAliases = {};
+    Object.keys(COLUMN_ALIASES).forEach(function(k) {
+        lowerAliases[k.toLowerCase()] = COLUMN_ALIASES[k];
+    });
+    return headers.map(function(h) {
+        const trimmed = h.trim();
+        const mapped  = lowerAliases[trimmed.toLowerCase()];
+        return mapped || trimmed;
     });
 }
 

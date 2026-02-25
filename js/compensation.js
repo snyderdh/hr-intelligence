@@ -15,6 +15,21 @@ const _cEsc = s => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').re
 // ── Tier multiplier lookup ──
 const _TIER_MULT = { 'Tier 1': 1.0, 'Tier 2': 0.9, 'Tier 3': 0.85, 'Tier 4': 0.8, 'Tier 5': 0.75 };
 
+// ── getBandField ──
+// Reads a band field from an employee object, checking both canonical and
+// common variant names. Returns 0 if not found or not a valid positive number.
+function getBandField(emp) {
+    const keys = Array.prototype.slice.call(arguments, 1);
+    for (var ki = 0; ki < keys.length; ki++) {
+        var val = emp[keys[ki]];
+        if (val !== undefined && val !== null && val !== '') {
+            var n = parseFloat(String(val).replace(/[$,\s"]/g, ''));
+            if (!isNaN(n) && n > 0) return n;
+        }
+    }
+    return 0;
+}
+
 // ── enrichCompData ──
 // Ensures all comp fields exist on every employee.
 // When band data (bandMin/Mid/Max) is already present from a CSV upload, those
@@ -43,16 +58,29 @@ function enrichCompData(employees) {
     };
     const _pf = v => parseFloat(String(v || 0).replace(/[$,\s"]/g, '')) || 0;
 
+    // ── Diagnostic: confirm band data is being read ──
+    const _diagSample = employees.find(function(e) { return !e.isGhost; });
+    if (_diagSample) {
+        const _dMin = getBandField(_diagSample, 'bandMin', 'BandMin', 'min');
+        const _dMid = getBandField(_diagSample, 'bandMid', 'BandMid', 'mid', 'midpoint');
+        const _dMax = getBandField(_diagSample, 'bandMax', 'BandMax', 'max');
+        console.log('[Canopy] Band check — bandMin:', _dMin,
+            'bandMid:', _dMid, 'bandMax:', _dMax,
+            'hasExistingBands:', _dMin > 0 && _dMid > 0 && _dMax > 0);
+    }
+
     return employees.map(function (emp) {
         if (emp.isGhost) return emp;
 
         const salary = _pf(emp.salary);
 
         // Check 1 — valid band values already present (CSV upload or sampleData.js)
+        // Uses getBandField to tolerate original-case CSV column names that
+        // weren't normalised (e.g. BandMax, Q1 stored directly on the object).
         const hasExistingBands = (
-            emp.bandMid && _pf(emp.bandMid) > 0 &&
-            emp.bandMin && _pf(emp.bandMin) > 0 &&
-            emp.bandMax && _pf(emp.bandMax) > 0
+            getBandField(emp, 'bandMid', 'BandMid', 'mid', 'midpoint') > 0 &&
+            getBandField(emp, 'bandMin', 'BandMin', 'min') > 0 &&
+            getBandField(emp, 'bandMax', 'BandMax', 'max') > 0
         );
 
         // Check 2 — valid geoTier already present
@@ -63,16 +91,14 @@ function enrichCompData(employees) {
 
         if (hasExistingBands) {
             // Use CSV-supplied band values — never overwrite with calculations
-            adjMin  = _pf(emp.bandMin);
-            adjMax  = _pf(emp.bandMax);
-            adjMid  = _pf(emp.bandMid);
+            adjMin  = getBandField(emp, 'bandMin', 'BandMin', 'band_min', 'min');
+            adjMax  = getBandField(emp, 'bandMax', 'BandMax', 'band_max', 'max');
+            adjMid  = getBandField(emp, 'bandMid', 'BandMid', 'band_mid', 'mid', 'midpoint');
             // Q1/Q3: use CSV value if present; otherwise interpolate from Min/Max
-            adjQ1   = emp.bandQ1 && _pf(emp.bandQ1) > 0
-                        ? _pf(emp.bandQ1)
-                        : adjMin + (adjMax - adjMin) * 0.25;
-            adjQ3   = emp.bandQ3 && _pf(emp.bandQ3) > 0
-                        ? _pf(emp.bandQ3)
-                        : adjMin + (adjMax - adjMin) * 0.75;
+            const _q1val = getBandField(emp, 'bandQ1', 'BandQ1', 'Q1', 'q1', 'band_q1');
+            const _q3val = getBandField(emp, 'bandQ3', 'BandQ3', 'Q3', 'q3', 'band_q3');
+            adjQ1   = _q1val > 0 ? _q1val : adjMin + (adjMax - adjMin) * 0.25;
+            adjQ3   = _q3val > 0 ? _q3val : adjMin + (adjMax - adjMin) * 0.75;
             geoTier = hasExistingGeoTier
                         ? String(emp.geoTier).trim()
                         : (geoTierByCity[(emp.city || '').trim()] || 'Tier 3');
