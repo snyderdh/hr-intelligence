@@ -16,9 +16,9 @@ const _cEsc = s => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').re
 const _TIER_MULT = { 'Tier 1': 1.0, 'Tier 2': 0.9, 'Tier 3': 0.85, 'Tier 4': 0.8, 'Tier 5': 0.75 };
 
 // ── enrichCompData ──
-// Ensures all comp fields exist on every employee. If an employee already has
-// bandMid and compaRatio (pre-computed in sampleData.js), it is returned unchanged.
-// Falls back to runtime calculation for any employee missing these fields.
+// Ensures all comp fields exist on every employee.
+// When band data (bandMin/Mid/Max) is already present from a CSV upload, those
+// values are used as-is. Fields are only calculated when missing.
 function enrichCompData(employees) {
     const bandMidByLevel = {
         'IC1': 58000,  'IC2': 75000,  'IC3': 98000,  'IC4': 125000,
@@ -41,26 +41,59 @@ function enrichCompData(employees) {
         'Tier 1': '100%', 'Tier 2': '90%', 'Tier 3': '85%',
         'Tier 4': '80%',  'Tier 5': '75%'
     };
+    const _pf = v => parseFloat(String(v || 0).replace(/[$,\s"]/g, '')) || 0;
 
     return employees.map(function (emp) {
         if (emp.isGhost) return emp;
 
-        // Skip enrichment if fields already present (normal sampleData.js path)
-        if (emp.bandMid && emp.compaRatio) return emp;
+        const salary = _pf(emp.salary);
 
-        var salary  = parseFloat(String(emp.salary).replace(/[^0-9.]/g, '')) || 0;
-        var baseMid = bandMidByLevel[emp.jobLevel] || 85000;
-        var city    = (emp.city || '').trim();
-        var geoTier = geoTierByCity[city] || 'Tier 3';
-        var mult    = _TIER_MULT[geoTier] || 0.85;
+        // Check 1 — valid band values already present (CSV upload or sampleData.js)
+        const hasExistingBands = (
+            emp.bandMid && _pf(emp.bandMid) > 0 &&
+            emp.bandMin && _pf(emp.bandMin) > 0 &&
+            emp.bandMax && _pf(emp.bandMax) > 0
+        );
 
-        var adjMin = Math.round(baseMid * 0.75  * mult / 1000) * 1000;
-        var adjQ1  = Math.round(baseMid * 0.875 * mult / 1000) * 1000;
-        var adjMid = Math.round(baseMid          * mult / 1000) * 1000;
-        var adjQ3  = Math.round(baseMid * 1.125 * mult / 1000) * 1000;
-        var adjMax = Math.round(baseMid * 1.25  * mult / 1000) * 1000;
+        // Check 2 — valid geoTier already present
+        const VALID_TIERS = ['Tier 1', 'Tier 2', 'Tier 3', 'Tier 4', 'Tier 5'];
+        const hasExistingGeoTier = emp.geoTier && VALID_TIERS.includes(String(emp.geoTier).trim());
 
-        var compaRatio = adjMid > 0 ? Math.round((salary / adjMid) * 100) / 100 : 0;
+        let adjMin, adjQ1, adjMid, adjQ3, adjMax, geoTier, geoDiff;
+
+        if (hasExistingBands) {
+            // Use CSV-supplied band values — never overwrite with calculations
+            adjMin  = _pf(emp.bandMin);
+            adjMax  = _pf(emp.bandMax);
+            adjMid  = _pf(emp.bandMid);
+            // Q1/Q3: use CSV value if present; otherwise interpolate from Min/Max
+            adjQ1   = emp.bandQ1 && _pf(emp.bandQ1) > 0
+                        ? _pf(emp.bandQ1)
+                        : adjMin + (adjMax - adjMin) * 0.25;
+            adjQ3   = emp.bandQ3 && _pf(emp.bandQ3) > 0
+                        ? _pf(emp.bandQ3)
+                        : adjMin + (adjMax - adjMin) * 0.75;
+            geoTier = hasExistingGeoTier
+                        ? String(emp.geoTier).trim()
+                        : (geoTierByCity[(emp.city || '').trim()] || 'Tier 3');
+            geoDiff = tierGeoDiff[geoTier] || '85%';
+        } else {
+            // No band data — calculate from jobLevel + city
+            const baseMid = bandMidByLevel[emp.jobLevel] || 85000;
+            geoTier = hasExistingGeoTier
+                        ? String(emp.geoTier).trim()
+                        : (geoTierByCity[(emp.city || '').trim()] || 'Tier 3');
+            const mult = _TIER_MULT[geoTier] || 0.85;
+            geoDiff = tierGeoDiff[geoTier] || '85%';
+            adjMin  = Math.round(baseMid * 0.75  * mult / 1000) * 1000;
+            adjQ1   = Math.round(baseMid * 0.875 * mult / 1000) * 1000;
+            adjMid  = Math.round(baseMid          * mult / 1000) * 1000;
+            adjQ3   = Math.round(baseMid * 1.125 * mult / 1000) * 1000;
+            adjMax  = Math.round(baseMid * 1.25  * mult / 1000) * 1000;
+        }
+
+        // Always re-derive compaRatio and quartile from the final band values
+        const compaRatio = adjMid > 0 ? Math.round((salary / adjMid) * 100) / 100 : 0;
 
         var quartile = 'Q2';
         if      (salary < adjMin)  quartile = 'Below Min';
@@ -70,7 +103,7 @@ function enrichCompData(employees) {
         else if (salary <= adjMax) quartile = 'Q4';
         else                       quartile = 'Above Max';
 
-        var lastPayIncrease = emp.lastPayIncrease;
+        var lastPayIncrease = emp.lastPayIncrease || '';
         if (!lastPayIncrease) {
             var monthsAgo = 6 + Math.floor(Math.random() * 18);
             var d = new Date(2026, 1, 25);
@@ -79,14 +112,14 @@ function enrichCompData(employees) {
         }
 
         return Object.assign({}, emp, {
-            salary:          salary,
-            bandMin:         adjMin, bandQ1: adjQ1, bandMid: adjMid,
-            bandQ3:          adjQ3,  bandMax: adjMax,
-            geoTier:         geoTier, geoDiff: tierGeoDiff[geoTier],
-            compaRatio:      compaRatio, quartile: quartile,
-            belowMin:        salary < adjMin,
-            aboveMax:        salary > adjMax,
-            lastPayIncrease: lastPayIncrease
+            salary,
+            bandMin: adjMin, bandQ1: adjQ1, bandMid: adjMid,
+            bandQ3:  adjQ3,  bandMax: adjMax,
+            geoTier, geoDiff,
+            compaRatio, quartile,
+            belowMin: salary < adjMin,
+            aboveMax: salary > adjMax,
+            lastPayIncrease
         });
     });
 }

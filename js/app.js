@@ -499,8 +499,39 @@ initFileInput();
     });
 })();
 
-// Hide demo badge when real CSV is uploaded
+// Full state teardown + badge hide when a new CSV is selected.
+// This fires synchronously (before FileReader.onload), so allData/viewData
+// are clean before the async parse completes.
 g('fileInput').addEventListener('change', function () {
+    // Reset data arrays
+    allData  = [];
+    viewData = [];
+
+    // Exit scenario mode and clear scenario state
+    if (typeof isScenarioMode    !== 'undefined') isScenarioMode    = false;
+    if (typeof currentScenarioId !== 'undefined') currentScenarioId = null;
+    if (typeof _liveDataSnapshot !== 'undefined') _liveDataSnapshot = null;
+    if (typeof scenarios         !== 'undefined') {
+        Object.keys(scenarios).forEach(k => delete scenarios[k]);
+    }
+
+    // Clear undo/redo stacks
+    if (typeof dragUndoStack !== 'undefined') dragUndoStack.length = 0;
+    if (typeof dragRedoStack !== 'undefined') dragRedoStack.length = 0;
+
+    // Destroy any live Chart.js instance so it doesn't hold old dataset refs
+    if (typeof chartInst !== 'undefined' && chartInst) {
+        try { chartInst.destroy(); } catch(e) {}
+        chartInst = null;
+    }
+
+    // Wipe persisted scenarios from localStorage so they don't bleed into new data
+    try {
+        Object.keys(localStorage).forEach(k => {
+            if (k.startsWith('canopy_')) localStorage.removeItem(k);
+        });
+    } catch(e) {}
+
     g('demoBadge').style.display = 'none';
 });
 
