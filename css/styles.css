@@ -597,47 +597,175 @@ input::placeholder, textarea::placeholder { color: var(--muted); }
     height: 100% !important;
 }
 
-/* ══════════════════════════════════════════════════ MOBILE RESPONSIVE */
-@media (max-width: 900px) {
+/* ══════════════════════════════════════════════════ MOBILE NAV DRAWER */
+#mobileNavDrawer { display: none; }
+#mobileNavOverlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 50000;
+}
+#mobileNavPanel {
+    position: fixed; left: 0; top: 0; height: 100vh; width: 280px;
+    background: #0f1729; z-index: 50001;
+    display: flex; flex-direction: column;
+    transform: translateX(-280px);
+    transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
+    padding-top: 0; overflow-y: auto;
+}
+#mobileNavPanel.open { transform: translateX(0); }
+#mobileNavHeader {
+    padding: 20px 20px 16px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid rgba(255,255,255,0.08); flex-shrink: 0;
+}
+#mobileNavHeader span { color: #fff; font-size: 18px; font-weight: 800; font-family: var(--font-hd); }
+#mobileNavHeader button {
+    color: rgba(255,255,255,0.5); background: transparent; border: none;
+    font-size: 18px; cursor: pointer; padding: 4px; min-height: 0;
+}
+#mobileNavPanel a {
+    display: flex; align-items: center;
+    padding: 14px 24px; color: rgba(255,255,255,0.7);
+    font-size: 15px; font-weight: 600;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    cursor: pointer; text-decoration: none; min-height: 48px;
+    transition: background 0.15s, color 0.15s;
+}
+#mobileNavPanel a:hover { background: rgba(255,255,255,0.07); color: #fff; }
+
+/* ══════════════════════════════════════════════════ SCENARIO STUDIO — MOBILE */
+#pageScenarioStudio .ss-mobile-notice { display: none; }
+#pageScenarioStudio .ss-desktop-content { display: contents; }
+
+/* ══════════════════════════════════════════════════ TABLET (769–1024px) */
+@media (max-width: 1024px) {
+    /* Hide Workforce Planning nav link at tablet; keep Ask Claude */
+    #nlScenarioStudio { display: none; }
+
+    /* Home — 2-up cards and 2-col tiles */
+    #homeCards { grid-template-columns: 1fr 1fr; }
+    #homeTiles { grid-template-columns: 1fr 1fr; }
+
+    /* Compensation summary cards — 2 cols at tablet */
+    .comp-cards-grid { grid-template-columns: repeat(2, 1fr) !important; }
+
+    /* Dashboard sidebar narrower */
+    .dash-layout { grid-template-columns: 200px 1fr; }
+    .dash-sidebar .ml { font-size: 8px; }
+    .dash-sidebar .mr { font-size: 11px; }
+}
+
+/* ══════════════════════════════════════════════════ MOBILE (≤768px) */
+@media (max-width: 768px) {
     html, body { height: auto; overflow: hidden auto; }
     .page.active { overflow-y: auto; height: auto; min-height: 0; flex: none; }
 
-    /* Nav */
-    #mainNav { padding: 0 12px; flex-wrap: wrap; height: auto; min-height: 52px; gap: 6px; }
-    .nav-links { gap: 2px; }
-    .nav-link { padding: 5px 10px; font-size: 11px; }
-    .nav-actions .top-btn span { display: none; }
+    /* ── Navbar ── */
+    #mainNav { height: 52px; padding: 0 16px; position: relative; }
+    .brand-name { font-size: 16px; }
+    .nav-links { display: none; }
+    .nav-actions { display: none; }
+    #navHamburger {
+        display: flex !important; align-items: center;
+        position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
+        background: transparent; border: none; color: white;
+        font-size: 22px; cursor: pointer; z-index: 10001;
+        padding: 8px; min-height: 44px;
+    }
+    #navSubBar { display: none; }
 
-    /* Home */
-    #pageHome.active { padding: 14px; gap: 14px; }
-    #homeHero { padding: 12px 14px; gap: 0; flex-direction: row; flex-wrap: wrap; }
+    /* ── Home page ── */
+    #pageHome.active { padding: 16px; gap: 16px; }
+    #homeHero { padding: 12px 16px; gap: 0; flex-direction: row; flex-wrap: wrap; }
     .hero-metric { padding: 4px 10px; }
-    .hero-metric span { font-size: 15px; }
+    .hero-metric span { font-size: 16px; }
+    /* Hide Span:1 and Org Health stats on mobile — keep HC, Payroll, Avg Sal, Avg Tenure */
+    .hero-metric:nth-child(5), .hero-metric:nth-child(6) { display: none; }
     .hero-actions { margin-left: 0; width: 100%; margin-top: 10px; justify-content: flex-start; }
-    #homeCards { grid-template-columns: 1fr 1fr; gap: 10px; }
+    #homeCards { grid-template-columns: 1fr; gap: 12px; }
+    .insight-card { padding: 16px; border-radius: 16px; }
     #homeTiles { grid-template-columns: 1fr; gap: 10px; }
+    .home-tile { padding: 20px; border-radius: 16px; }
+    .tile-label { font-size: 16px; }
 
-    /* Org chart */
+    /* ── Org chart ── */
     #pageOrgchart.active { padding: 10px; gap: 8px; }
-    #orgPageTop { height: auto; padding: 8px 12px; flex-wrap: wrap; gap: 6px; }
-    #orgToolbarSearch { flex-wrap: wrap; }
-    .toolbar-search-wrap { width: 100%; }
+    #orgPageTop { height: auto; padding: 10px 12px; flex-wrap: wrap; gap: 8px; }
+    #orgToolbarSearch { flex-wrap: wrap; gap: 8px; }
+    .toolbar-search-wrap { width: 100%; flex-shrink: unset; }
+    .toolbar-search-wrap input[type=text] { width: 100%; }
+    .toolbar-dept-select { width: 100% !important; flex-shrink: unset; }
+    #orgReadOnlyBanner { font-size: 11px; padding: 6px 16px; }
+    #chartWrap { touch-action: pan-x pan-y; -webkit-overflow-scrolling: touch; min-height: 60vh; }
 
-    /* Dashboard */
+    /* Spotlight — bottom sheet on mobile */
+    #spotlight {
+        position: fixed; bottom: 0; left: 0; right: 0;
+        width: 100%; max-height: 60vh; border-radius: 20px 20px 0 0;
+        overflow-y: auto; -webkit-overflow-scrolling: touch;
+        padding: 8px 18px 24px;
+    }
+    #spotlight::before {
+        content: ''; display: block;
+        width: 40px; height: 4px; background: rgba(0,0,0,0.15);
+        border-radius: 2px; margin: 0 auto 14px;
+    }
+    .spot-x { position: sticky; top: 0; float: right; margin-bottom: -30px; z-index: 1; }
+
+    /* ── Org Health ── */
+    .oh-hero { flex-direction: column !important; }
+    .oh-score-num { font-size: 60px !important; }
+    .oh-two-col { grid-template-columns: 1fr !important; }
+    .oh-risk-cards { grid-template-columns: 1fr !important; }
+    .oh-dept-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .oh-trend-banner { display: none; }
+
+    /* ── Compensation ── */
+    .comp-filters-bar { flex-direction: column; gap: 8px; align-items: stretch; }
+    .comp-filter-sel { max-width: 100% !important; width: 100%; flex: none; min-height: 44px; }
+    .comp-cards-grid { grid-template-columns: repeat(2, 1fr) !important; }
+    /* Charts: show only Chart A, hide B and C */
+    .comp-charts-row { grid-template-columns: 1fr !important; }
+    .comp-charts-row .comp-chart-card:not(:first-child) { display: none !important; }
+    .comp-chart-card-wide { display: none !important; }
+    /* Master table hidden — too wide */
+    .comp-master-search-wrap, .comp-master-table { display: none; }
+    /* Geo tier: show strip, hide matrix and cost section */
+    .comp-cost-section { display: none; }
+    .comp-geo-matrix { display: none; }
+    /* Action tables: horizontal scroll */
+    .comp-action-body table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; font-size: 11px; }
+    .comp-action-body th, .comp-action-body td { padding: 8px 10px; white-space: nowrap; }
+
+    /* ── Dashboard ── */
     #pageDashboard.active { overflow-y: auto; height: auto; }
-    #pageDashboard #dashInner { padding: 14px; flex: none; }
+    #pageDashboard #dashInner { padding: 16px; flex: none; }
     #pageDashboard .dash-layout { grid-template-columns: 1fr; height: auto; flex: none; }
     #pageDashboard .dash-sidebar { overflow: visible; }
-    #tChart { min-height: 320px; }
-    #tChart > div { min-height: 300px; }
+    .tab-row { overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; }
+    .tab-btn { font-size: 12px; padding: 8px 12px; flex-shrink: 0; }
+    #tChart { min-height: 300px; }
+    #tChart > div { min-height: 280px; }
     .dash-filters { flex-direction: row; gap: 6px; flex-wrap: wrap; }
     .dash-filters select { width: auto !important; min-width: 120px !important; }
-}
 
-@media (max-width: 600px) {
-    #homeCards { grid-template-columns: 1fr; }
-    #pageDashboard .dash-sidebar { grid-template-columns: 1fr; }
-    .nav-brand .brand-name { display: none; }
+    /* ── Global tables ── */
+    .tab-pane table, .oh-dept-table-wrap table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .tab-pane th, .tab-pane td { font-size: 11px; padding: 8px 10px; white-space: nowrap; }
+
+    /* ── Touch targets (44px Apple HIG minimum) ── */
+    .toolbar-upload, .toolbar-search-btn, .toolbar-reset-btn,
+    .toolbar-clear-btn, .toolbar-export, .top-btn { min-height: 44px; }
+
+    /* ── Workforce Planning mobile notice ── */
+    #pageScenarioStudio .ss-mobile-notice {
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center; min-height: 60vh;
+    }
+    #pageScenarioStudio .ss-desktop-content { display: none; }
+
+    /* ── Hide brand name on very narrow phones ── */
+    .nav-brand .brand-name { font-size: 15px; }
 }
 
 /* ══════════════════════════════════════════════════ SCENARIO STUDIO PANEL */

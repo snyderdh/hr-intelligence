@@ -504,6 +504,23 @@ g('fileInput').addEventListener('change', function () {
     g('demoBadge').style.display = 'none';
 });
 
+// ── Mobile navigation drawer ──
+function openMobileNav() {
+    document.getElementById('mobileNavDrawer').style.display = 'block';
+    setTimeout(() => document.getElementById('mobileNavPanel').classList.add('open'), 10);
+    document.body.style.overflow = 'hidden';
+}
+function closeMobileNav() {
+    document.getElementById('mobileNavPanel').classList.remove('open');
+    setTimeout(() => {
+        document.getElementById('mobileNavDrawer').style.display = 'none';
+        document.body.style.overflow = '';
+    }, 280);
+}
+document.getElementById('navHamburger').addEventListener('click', openMobileNav);
+document.getElementById('mobileNavClose').addEventListener('click', closeMobileNav);
+document.getElementById('mobileNavOverlay').addEventListener('click', closeMobileNav);
+
 // ── Scenario public API (callable from console or future UI) ──
 // Usage:
 //   Canopy.saveScenario('Reorg Q3', 'Sales team restructure')  → returns id

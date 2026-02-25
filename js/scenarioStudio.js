@@ -811,6 +811,19 @@ function renderScenarioStudio() {
         el.dataset.built = 'yes';
 
         el.innerHTML = [
+            // ── Mobile notice (hidden on desktop via CSS) ──
+            '<div class="ss-mobile-notice">',
+            '  <div style="text-align:center;padding:32px 24px;max-width:380px;margin:0 auto;">',
+            '    <div style="font-size:48px;margin-bottom:16px;">📋</div>',
+            '    <div style="font-size:20px;font-weight:800;color:var(--text);font-family:var(--font-hd);margin-bottom:12px;">Workforce Planning</div>',
+            '    <p style="color:var(--muted);font-size:14px;line-height:1.6;margin-bottom:24px;">Workforce Planning is optimized for desktop. Please open Canopy on a larger screen to model org changes and analyze financial impact.</p>',
+            '    <button onclick="showPage(\'orgchart\')" style="background:var(--accent);color:#fff;border:none;border-radius:10px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer;width:100%;font-family:var(--font-ui);">View Org Chart</button>',
+            '  </div>',
+            '</div>',
+
+            // ── Desktop content (hidden on mobile via CSS) ──
+            '<div class="ss-desktop-content">',
+
             // ── Main toolbar ──
             '<div id="ssTbar">',
             '  <div id="ssTbarLeft">',
@@ -906,6 +919,8 @@ function renderScenarioStudio() {
             '  </div>',
             '  <div id="ssCompareContent"></div>',
             '</div>',
+
+            '</div>',  // close ss-desktop-content
         ].join('\n');
 
         // ── Attach all event listeners (no inline onclick on toolbar buttons) ──

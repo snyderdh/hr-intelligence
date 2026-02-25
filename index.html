@@ -38,6 +38,7 @@
     <div class="nav-actions">
         <button class="top-btn primary" onclick="toggleAI()">✦ Ask Claude</button>
     </div>
+    <button id="navHamburger" style="display:none;">☰</button>
 </nav>
 
 <!-- ══════════════════════════════════════════════════════ SUB-NAV BAR -->
@@ -316,6 +317,23 @@
 </div>
 
 <datalist id="namesList"></datalist>
+
+<!-- ═══════════════════════════════════════════════ MOBILE NAV DRAWER -->
+<div id="mobileNavDrawer">
+    <div id="mobileNavOverlay"></div>
+    <nav id="mobileNavPanel">
+        <div id="mobileNavHeader">
+            <span>Canopy</span>
+            <button id="mobileNavClose">✕</button>
+        </div>
+        <a onclick="showPage('home');closeMobileNav()">🏠 Home</a>
+        <a onclick="showPage('orgHealth');closeMobileNav()">❤️ Org Health</a>
+        <a onclick="showPage('compensation');closeMobileNav()">💰 Compensation</a>
+        <a onclick="showPage('orgchart');closeMobileNav()">🌳 Org Chart</a>
+        <a onclick="showPage('dashboard');closeMobileNav()">📊 Dashboard</a>
+        <a onclick="showPage('scenarioStudio');closeMobileNav()">📋 Workforce Planning</a>
+    </nav>
+</div>
 
 <!-- Scripts: sampleData → state → csv → chart → dashboard → orgHealth → ai → drag → scenarios → scenarioStudio → app -->
 <script src="js/sampleData.js"></script>
