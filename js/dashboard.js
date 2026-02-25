@@ -105,6 +105,7 @@ function updateStats(data) {
 
     if (typeof renderHome === 'function') renderHome();
     if (typeof renderOrgHealth === 'function') renderOrgHealth();
+    if (typeof renderCompensation === 'function') renderCompensation();
 }
 
 // ── Chart.js drill chart ──
@@ -625,8 +626,21 @@ window._geoLocRow = function (el) {
 // ── Dashboard filter shortcuts (from dept/mgr dropdowns) ──
 function dashFilter(mode) {
     const val = g(mode === 'dept' ? 'dDept' : 'dMgr').value;
-    if (!val) return;
-    g('filterVal').value   = val;
-    g('filterMode').value  = mode === 'dept' ? 'dept' : 'team';
-    applyFilter();
+    if (!val || !allData.length) { resetDashView(); return; }
+    const real = allData.filter(d => !d.isGhost);
+    if (mode === 'dept') {
+        viewData = JSON.parse(JSON.stringify(real.filter(d => d.department === val)));
+    } else {
+        const sub = [];
+        const collect = id => {
+            const node = real.find(d => d.id === id);
+            if (node && !sub.find(s => s.id === id)) {
+                sub.push(node);
+                real.filter(d => d.parentId === id).forEach(c => collect(c.id));
+            }
+        };
+        collect(val);
+        viewData = JSON.parse(JSON.stringify(sub));
+    }
+    updateStats(viewData);
 }

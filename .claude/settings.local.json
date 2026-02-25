@@ -12,7 +12,8 @@
       "Bash(lsof:*)",
       "Bash(node --version:*)",
       "Bash(npm:*)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "Bash(node --check:*)"
     ]
   }
 }

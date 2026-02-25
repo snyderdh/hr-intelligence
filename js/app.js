@@ -28,6 +28,9 @@ function navGoFwd() {
 
 // ── Page navigation ──
 function showPage(name, push) {
+    // Always dismiss spotlight when navigating
+    if (typeof closeSpot === 'function') closeSpot();
+
     if (push !== false) {
         // Truncate any forward history then push
         navHistory = navHistory.slice(0, navHistoryIdx + 1);
@@ -51,6 +54,9 @@ function showPage(name, push) {
     if (name === 'orgHealth' && allData.length) {
         renderOrgHealth();
     }
+    if (name === 'compensation' && allData.length) {
+        if (typeof renderCompensation === 'function') renderCompensation();
+    }
     if (name === 'scenarioStudio') {
         if (typeof renderScenarioStudio === 'function') renderScenarioStudio();
     }
@@ -67,6 +73,7 @@ function showPage(name, push) {
 // ── Org chart view reset ──
 function resetOrgView() {
     if (g('globalSearch')) g('globalSearch').value = '';
+    if (g('orgDeptFilter')) g('orgDeptFilter').value = '';
     // Clear node highlights
     document.querySelectorAll('[data-nid]').forEach(function (card) {
         card.style.opacity    = '';
@@ -75,11 +82,6 @@ function resetOrgView() {
         card.style.zIndex     = '';
         card.style.transition = '';
     });
-    if (g('dDept'))      g('dDept').value      = '';
-    if (g('dMgr'))       g('dMgr').value       = '';
-    if (g('filterMode')) g('filterMode').value  = 'none';
-    if (g('filterVal'))  g('filterVal').value   = '';
-    if (typeof toggleFilterUI === 'function') toggleFilterUI();
     viewData = JSON.parse(JSON.stringify(allData));
     refresh(false);
 }
@@ -94,8 +96,6 @@ function resetDashView() {
 
 // ── Org health score ──
 function orgHealth(real) {
-    let score = 100;
-    const penalties = [];
     const flags = {
         overExtended:       [],
         wideSpan:           [],
@@ -109,155 +109,196 @@ function orgHealth(real) {
         deptHealth:         [],
     };
 
-    // ── Avg tenure penalty ──
+    // ── Tenure ──
     const tens = real.map(tenYrs).filter(v => v !== null);
     const avgT = tens.length ? tens.reduce((a, b) => a + b, 0) / tens.length : 0;
-    if (avgT < 1) {
-        score -= 18;
-        penalties.push({ category: 'Tenure Risk', description: `Avg tenure ${avgT.toFixed(1)} yrs — critical attrition risk`, impact: -18 });
-        flags.tenureRisk = { avgT, level: 'critical' };
-    } else if (avgT < 2) {
-        score -= 10;
-        penalties.push({ category: 'Tenure Risk', description: `Avg tenure ${avgT.toFixed(1)} yrs — below healthy baseline`, impact: -10 });
-        flags.tenureRisk = { avgT, level: 'warning' };
-    } else if (avgT < 3) {
-        score -= 5;
-        penalties.push({ category: 'Tenure Risk', description: `Avg tenure ${avgT.toFixed(1)} yrs — slightly below average`, impact: -5 });
-        flags.tenureRisk = { avgT, level: 'low' };
+    if (tens.length) {
+        const lvl = avgT < 1 ? 'critical' : avgT < 2 ? 'warning' : 'ok';
+        flags.tenureRisk = { avgT, level: lvl };
     }
 
     // ── Span of control ──
     const mgrs = real.filter(d => real.some(e => e.parentId === d.id));
-    let spanPenalty = 0;
     mgrs.forEach(m => {
         const n = real.filter(d => d.parentId === m.id).length;
-        if (n >= 12) {
-            flags.overExtended.push({ name: m.name, title: m.title, dept: m.department, reportCount: n });
-            spanPenalty += 8;
-        } else if (n >= 9) {
-            flags.wideSpan.push({ name: m.name, title: m.title, dept: m.department, reportCount: n });
-            spanPenalty += 3;
-        }
+        if (n >= 12) flags.overExtended.push({ name: m.name, title: m.title, dept: m.department, reportCount: n });
+        else if (n >= 9) flags.wideSpan.push({ name: m.name, title: m.title, dept: m.department, reportCount: n });
     });
-    if (spanPenalty > 0) {
-        score -= spanPenalty;
-        penalties.push({ category: 'Span of Control', description: `${flags.overExtended.length} over-extended, ${flags.wideSpan.length} wide-span manager${flags.wideSpan.length !== 1 ? 's' : ''}`, impact: -spanPenalty });
-    }
 
-    // ── Low performers & missing ratings ──
+    // ── Performance ratings ──
     const rats = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0, NR: 0 };
     real.forEach(d => { const r = pRat(d.rating); if (r in rats) rats[r]++; });
     flags.missingRatings = rats.NR || 0;
-
     const lowPerf = (rats[1] || 0) + (rats[2] || 0);
     const lpPct   = real.length ? (lowPerf / real.length) * 100 : 0;
-    if (lpPct >= 20) {
-        score -= 14;
-        penalties.push({ category: 'Performance Concentration', description: `${lpPct.toFixed(1)}% rated ≤2★ — high low-performer density`, impact: -14 });
-        flags.perfConcentration.push({ type: 'low', pct: lpPct, count: lowPerf });
-    } else if (lpPct >= 10) {
-        score -= 7;
-        penalties.push({ category: 'Performance Concentration', description: `${lpPct.toFixed(1)}% rated ≤2★ — elevated low-performer share`, impact: -7 });
-        flags.perfConcentration.push({ type: 'low', pct: lpPct, count: lowPerf });
-    }
-
-    const nrPct = real.length ? (rats.NR / real.length) * 100 : 0;
-    if (nrPct >= 30) {
-        score -= 10;
-        penalties.push({ category: 'Missing Ratings', description: `${nrPct.toFixed(1)}% of employees unrated — review cycle gaps`, impact: -10 });
-    } else if (nrPct >= 15) {
-        score -= 5;
-        penalties.push({ category: 'Missing Ratings', description: `${nrPct.toFixed(1)}% of employees unrated`, impact: -5 });
-    }
+    if (lpPct > 0) flags.perfConcentration.push({ type: 'low', pct: lpPct, count: lowPerf });
 
     // ── Low-rated managers ──
     mgrs.forEach(m => {
         const r = pRat(m.rating);
         if (r !== 'NR' && r <= 2) flags.lowRatedManagers.push({ name: m.name, title: m.title, dept: m.department, rating: r });
     });
-    if (flags.lowRatedManagers.length) {
-        const lrmPenalty = flags.lowRatedManagers.length * 6;
-        score -= lrmPenalty;
-        penalties.push({ category: 'Low-Rated Managers', description: `${flags.lowRatedManagers.length} manager${flags.lowRatedManagers.length !== 1 ? 's' : ''} rated ≤2★`, impact: -lrmPenalty });
-    }
 
-    // ── Compensation equity (max -15) ──
+    // ── Compensation equity (flag groups >40% variance for detail table) ──
     const allDepts  = [...new Set(real.map(d => d.department).filter(Boolean))];
     const allLevels = [...new Set(real.map(d => d.jobLevel).filter(Boolean))];
-    const equityGroups = [];
+    let hasModVariance = false;
     allDepts.forEach(dept => {
         allLevels.forEach(level => {
             const grp  = real.filter(d => d.department === dept && d.jobLevel === level);
             if (grp.length < 2) return;
             const sals = grp.map(d => cleanSal(d.salary)).filter(s => s > 0);
             if (sals.length < 2) return;
-            const minSal  = Math.min(...sals);
-            const maxSal  = Math.max(...sals);
+            const minSal = Math.min(...sals), maxSal = Math.max(...sals);
             if (minSal <= 0) return;
             const variance = maxSal / minSal;
-            if (variance > 1.4) equityGroups.push({ dept, level, minSal, maxSal, variance });
+            if (variance > 1.4) flags.compensationEquity.push({ dept, level, minSal, maxSal, variance });
+            else if (variance > 1.25) hasModVariance = true;
         });
     });
-    flags.compensationEquity = equityGroups;
-    const equityPenalty = Math.min(equityGroups.length * 5, 15);
-    if (equityPenalty > 0) {
-        score -= equityPenalty;
-        penalties.push({ category: 'Compensation Equity', description: `${equityGroups.length} dept/level group${equityGroups.length !== 1 ? 's' : ''} with >40% salary variance`, impact: -equityPenalty });
-    }
 
-    // ── Succession gaps (max -12) ──
-    const successionGaps = [];
+    // ── Succession gaps ──
     mgrs.forEach(m => {
         const reports      = real.filter(d => d.parentId === m.id);
         const hasHighRated = reports.some(d => { const r = pRat(d.rating); return r !== 'NR' && r >= 4; });
-        if (!hasHighRated) successionGaps.push({ name: m.name, title: m.title, dept: m.department, reportCount: reports.length });
+        if (!hasHighRated) flags.successionGaps.push({ name: m.name, title: m.title, dept: m.department, reportCount: reports.length });
     });
-    flags.successionGaps = successionGaps;
-    const successionPenalty = Math.min(successionGaps.length * 3, 12);
-    if (successionPenalty > 0) {
-        score -= successionPenalty;
-        penalties.push({ category: 'Succession Gaps', description: `${successionGaps.length} manager${successionGaps.length !== 1 ? 's' : ''} with no high-rated direct reports`, impact: -successionPenalty });
-    }
 
-    // ── Single points of failure (max -10) ──
-    const singlePoints = [];
+    // ── Single points of failure ──
     allDepts.forEach(dept => {
         allLevels.forEach(level => {
             const grp = real.filter(d => d.department === dept && d.jobLevel === level);
             if (grp.length !== 1) return;
-            const emp         = grp[0];
+            const emp = grp[0];
             const reportCount = real.filter(d => d.parentId === emp.id).length;
-            if (reportCount >= 3) singlePoints.push({ name: emp.name, title: emp.title, dept: emp.department, jobLevel: emp.jobLevel, reportCount });
+            if (reportCount >= 3) flags.singlePoints.push({ name: emp.name, title: emp.title, dept: emp.department, jobLevel: emp.jobLevel, reportCount });
         });
     });
-    flags.singlePoints = singlePoints;
-    const spofPenalty = Math.min(singlePoints.length * 5, 10);
-    if (spofPenalty > 0) {
-        score -= spofPenalty;
-        penalties.push({ category: 'Single Points of Failure', description: `${singlePoints.length} key-person dependenc${singlePoints.length !== 1 ? 'ies' : 'y'} identified`, impact: -spofPenalty });
-    }
 
-    // ── Department health (max -8) ──
-    const deptHealthFlags = [];
+    // ── Department health (flag depts ≤ 3.0 avg rating) ──
     allDepts.forEach(dept => {
         const de    = real.filter(d => d.department === dept);
         const rated = de.filter(d => { const r = pRat(d.rating); return r !== 'NR'; });
         if (!rated.length) return;
         const avgRating = rated.reduce((s, d) => s + pRat(d.rating), 0) / rated.length;
-        if (avgRating < 2.5) deptHealthFlags.push({ dept, avgRating, headcount: de.length });
+        if (avgRating <= 3.0) flags.deptHealth.push({ dept, avgRating, headcount: de.length });
     });
-    flags.deptHealth = deptHealthFlags;
-    const deptHealthPenalty = Math.min(deptHealthFlags.length * 4, 8);
-    if (deptHealthPenalty > 0) {
-        score -= deptHealthPenalty;
-        penalties.push({ category: 'Department Health', description: `${deptHealthFlags.length} department${deptHealthFlags.length !== 1 ? 's' : ''} with avg rating below 2.5★`, impact: -deptHealthPenalty });
+
+    // ── Risk category classification ──
+    const riskCategories = [];
+
+    // 1. Tenure Risk
+    if (!tens.length) {
+        riskCategories.push({ name: 'Tenure Risk', status: 'nodata', description: 'No start date data available' });
+    } else if (avgT < 1) {
+        riskCategories.push({ name: 'Tenure Risk', status: 'high', description: `Average tenure is ${avgT.toFixed(1)} years — critical attrition risk` });
+    } else if (avgT < 2) {
+        riskCategories.push({ name: 'Tenure Risk', status: 'moderate', description: `Average tenure is ${avgT.toFixed(1)} years — below healthy baseline` });
+    } else {
+        riskCategories.push({ name: 'Tenure Risk', status: 'healthy', description: `Average tenure is ${avgT.toFixed(1)} years across the organization` });
     }
 
-    score = Math.max(0, Math.min(100, Math.round(score)));
-    const label = score >= 80 ? 'Healthy' : score >= 60 ? 'Needs Attention' : 'Critical';
-    const color = score >= 80 ? 'green' : score >= 60 ? 'amber' : 'red';
+    // 2. Span of Control
+    if (!mgrs.length) {
+        riskCategories.push({ name: 'Span of Control', status: 'nodata', description: 'No managers identified' });
+    } else if (flags.overExtended.length > 0) {
+        riskCategories.push({ name: 'Span of Control', status: 'high', description: `${flags.overExtended.length} manager${flags.overExtended.length !== 1 ? 's' : ''} with 12+ direct reports` });
+    } else if (flags.wideSpan.length > 0) {
+        riskCategories.push({ name: 'Span of Control', status: 'moderate', description: `${flags.wideSpan.length} manager${flags.wideSpan.length !== 1 ? 's' : ''} with 9–11 direct reports` });
+    } else {
+        riskCategories.push({ name: 'Span of Control', status: 'healthy', description: `All ${mgrs.length} managers have 8 or fewer direct reports` });
+    }
 
-    return { score, label, color, penalties, flags };
+    // 3. Performance Distribution
+    const totalRated = [5,4,3,2,1].reduce((a, k) => a + (rats[k] || 0), 0);
+    if (!totalRated) {
+        riskCategories.push({ name: 'Performance Distribution', status: 'nodata', description: 'No performance ratings available' });
+    } else if (lpPct >= 20) {
+        riskCategories.push({ name: 'Performance Distribution', status: 'high', description: `${lpPct.toFixed(1)}% of employees rated ≤2★ — high low-performer density` });
+    } else if (lpPct >= 10) {
+        riskCategories.push({ name: 'Performance Distribution', status: 'moderate', description: `${lpPct.toFixed(1)}% of employees rated ≤2★ — elevated low-performer share` });
+    } else {
+        riskCategories.push({ name: 'Performance Distribution', status: 'healthy', description: `Low-performer density is ${lpPct.toFixed(1)}% — below the 10% threshold` });
+    }
+
+    // 4. Manager Quality
+    const ratedMgrs = mgrs.filter(m => pRat(m.rating) !== 'NR');
+    if (!ratedMgrs.length) {
+        riskCategories.push({ name: 'Manager Quality', status: 'nodata', description: 'No manager performance ratings available' });
+    } else if (flags.lowRatedManagers.length > 0) {
+        riskCategories.push({ name: 'Manager Quality', status: 'high', description: `${flags.lowRatedManagers.length} manager${flags.lowRatedManagers.length !== 1 ? 's' : ''} rated ≤2★` });
+    } else if (ratedMgrs.some(m => pRat(m.rating) === 3)) {
+        riskCategories.push({ name: 'Manager Quality', status: 'moderate', description: 'Some managers rated 3★ — leadership performance could be stronger' });
+    } else {
+        riskCategories.push({ name: 'Manager Quality', status: 'healthy', description: 'All rated managers are 4★ or 5★ — leadership is performing well' });
+    }
+
+    // 5. Rating Coverage
+    const nrPct = real.length ? (rats.NR / real.length) * 100 : 0;
+    if (!real.length) {
+        riskCategories.push({ name: 'Rating Coverage', status: 'nodata', description: 'No employee data' });
+    } else if (nrPct >= 30) {
+        riskCategories.push({ name: 'Rating Coverage', status: 'high', description: `${nrPct.toFixed(1)}% of employees unrated — review cycle gaps` });
+    } else if (nrPct >= 15) {
+        riskCategories.push({ name: 'Rating Coverage', status: 'moderate', description: `${nrPct.toFixed(1)}% of employees unrated` });
+    } else {
+        riskCategories.push({ name: 'Rating Coverage', status: 'healthy', description: `${(100 - nrPct).toFixed(0)}% of employees have performance ratings on file` });
+    }
+
+    // 6. Compensation Equity
+    if (!allDepts.length || !allLevels.length) {
+        riskCategories.push({ name: 'Compensation Equity', status: 'nodata', description: 'Insufficient data for equity analysis' });
+    } else if (flags.compensationEquity.length > 0) {
+        riskCategories.push({ name: 'Compensation Equity', status: 'high', description: `${flags.compensationEquity.length} dept/level group${flags.compensationEquity.length !== 1 ? 's' : ''} with >40% salary variance` });
+    } else if (hasModVariance) {
+        riskCategories.push({ name: 'Compensation Equity', status: 'moderate', description: 'Some dept/level groups show 25–40% salary variance' });
+    } else {
+        riskCategories.push({ name: 'Compensation Equity', status: 'healthy', description: 'All dept/level groups are within 25% pay variance' });
+    }
+
+    // 7. Succession Coverage
+    const gapRatio = mgrs.length ? flags.successionGaps.length / mgrs.length : 0;
+    if (!mgrs.length) {
+        riskCategories.push({ name: 'Succession Coverage', status: 'nodata', description: 'No managers identified' });
+    } else if (gapRatio > 0.5) {
+        riskCategories.push({ name: 'Succession Coverage', status: 'high', description: `${flags.successionGaps.length} of ${mgrs.length} managers have no high-rated direct report` });
+    } else if (gapRatio > 0.25) {
+        riskCategories.push({ name: 'Succession Coverage', status: 'moderate', description: `${flags.successionGaps.length} of ${mgrs.length} managers have no 4★+ direct report` });
+    } else {
+        riskCategories.push({ name: 'Succession Coverage', status: 'healthy', description: `${mgrs.length - flags.successionGaps.length} of ${mgrs.length} managers have at least one high-rated direct report` });
+    }
+
+    // 8. Single Points of Failure
+    const spofCount = flags.singlePoints.length;
+    if (!allDepts.length) {
+        riskCategories.push({ name: 'Single Points of Failure', status: 'nodata', description: 'Insufficient data' });
+    } else if (spofCount >= 3) {
+        riskCategories.push({ name: 'Single Points of Failure', status: 'high', description: `${spofCount} key-person dependencies identified` });
+    } else if (spofCount > 0) {
+        riskCategories.push({ name: 'Single Points of Failure', status: 'moderate', description: `${spofCount} key-person dependenc${spofCount !== 1 ? 'ies' : 'y'} identified` });
+    } else {
+        riskCategories.push({ name: 'Single Points of Failure', status: 'healthy', description: 'No sole-occupant dept/level roles with 3+ direct reports' });
+    }
+
+    // 9. Department Health
+    const highDepts = flags.deptHealth.filter(d => d.avgRating < 2.5);
+    const modDepts  = flags.deptHealth.filter(d => d.avgRating >= 2.5);
+    if (!allDepts.length) {
+        riskCategories.push({ name: 'Department Health', status: 'nodata', description: 'No department data' });
+    } else if (highDepts.length > 0) {
+        riskCategories.push({ name: 'Department Health', status: 'high', description: `${highDepts.length} department${highDepts.length !== 1 ? 's' : ''} with avg rating below 2.5★` });
+    } else if (modDepts.length > 0) {
+        riskCategories.push({ name: 'Department Health', status: 'moderate', description: `${modDepts.length} department${modDepts.length !== 1 ? 's' : ''} with avg rating 2.5–3.0★` });
+    } else {
+        riskCategories.push({ name: 'Department Health', status: 'healthy', description: 'All departments average above 3.0★ in performance ratings' });
+    }
+
+    // Derive a simple summary label from high-risk count (for home card, dashboard)
+    const highCount = riskCategories.filter(c => c.status === 'high').length;
+    const label = highCount === 0 ? 'Healthy' : highCount <= 2 ? 'Needs Attention' : 'Critical Issues';
+    const color = highCount === 0 ? 'green'  : highCount <= 2 ? 'amber'           : 'red';
+
+    return { flags, riskCategories, label, color };
 }
 
 // ── Home page renderer ──
@@ -267,11 +308,26 @@ function renderHome() {
 
     // ── Health score card ──
     const health = orgHealth(real);
-    const score  = health.score;
     const scoreColor = health.color === 'green' ? 'var(--green)' : health.color === 'amber' ? 'var(--amber)' : 'var(--red)';
-    g('cardHealthScore').innerText = score + '/100';
-    g('cardHealthScore').style.color = scoreColor;
-    g('homeHealthScore').innerText   = score + '/100';
+    const rc        = health.riskCategories;
+    const highCt    = rc.filter(c => c.status === 'high').length;
+    const modCt     = rc.filter(c => c.status === 'moderate').length;
+    const healthyCt = rc.filter(c => c.status === 'healthy').length;
+    const nodataCt  = rc.filter(c => c.status === 'nodata').length;
+    const barSegs = [
+        highCt    ? `<div style="flex:${highCt};background:#e03e3e;"></div>` : '',
+        modCt     ? `<div style="flex:${modCt};background:#f0a500;"></div>` : '',
+        healthyCt ? `<div style="flex:${healthyCt};background:#2d9b6f;"></div>` : '',
+        nodataCt  ? `<div style="flex:${nodataCt};background:#e5e7eb;"></div>` : '',
+    ].join('');
+    const countParts = [
+        highCt    ? `<span style="color:#e03e3e;">${highCt} High</span>` : '',
+        modCt     ? `<span style="color:#f0a500;">${modCt} Moderate</span>` : '',
+        healthyCt ? `<span style="color:#2d9b6f;">${healthyCt} Healthy</span>` : '',
+    ].filter(Boolean).join('<span style="color:#d1d5db;"> · </span>');
+    g('cardHealthScore').innerHTML = `<div style="display:flex;height:8px;border-radius:4px;overflow:hidden;">${barSegs}</div><div style="display:flex;gap:6px;margin-top:5px;font-size:10px;font-weight:700;">${countParts}</div>`;
+    g('cardHealthScore').style.color = '';
+    g('homeHealthScore').innerText   = health.label;
     g('homeHealthScore').style.color = scoreColor;
 
     const insightFlags = [];
@@ -330,126 +386,30 @@ function renderHome() {
 }
 
 // ── Top-bar panel toggles ──
-function toggleControls() {
-    g('controlStrip').classList.toggle('hidden');
-    setTimeout(() => { if (allData.length) orgC.render().fit(); }, 350);
-}
-
 function toggleDashboard() { showPage('dashboard'); }
 function toggleAI()        { g('aiPanel').classList.toggle('open'); }
 
-// ── Bulk-action bubble tags ──
-function renderTags() {
-    const box = g('bubbleBox');
-    box.querySelectorAll('.tag-bubble').forEach(b => b.remove());
-    tags.forEach(t => {
-        const b = document.createElement('div');
-        b.className = 'tag-bubble';
-        b.innerHTML = `${t} <span class="tag-remove" onclick="rmTag('${t.replace(/'/g, "\\'")}')">×</span>`;
-        box.insertBefore(b, g('editTarget'));
-    });
-}
-
-window.rmTag = id => { tags = tags.filter(t => t !== id); renderTags(); };
-
-// ── Filter panel UI ──
-function toggleFilterUI() {
-    g('filterUI').style.display = g('filterMode').value === 'none' ? 'none' : 'block';
-}
-
-// ── Edit panel UI ──
-function toggleEditUI() {
-    const mode = g('editMode').value;
-    g('destList').innerHTML = '';
-    g('editUI').style.display       = mode === 'none' ? 'none' : 'block';
-    g('bubbleSys').style.display    = mode === 'hire' ? 'none' : 'block';
-    g('hireFields').style.display   = mode === 'hire' ? 'block' : 'none';
-    g('editDest').style.display     = mode === 'delete' ? 'none' : 'block';
-    g('editDest').placeholder       = mode === 'deptUpdate' ? 'Select department…' : 'Select reporting manager…';
-
-    if (mode === 'move' || mode === 'hire') {
-        allData.filter(d => !d.isGhost).forEach(m => {
-            const o = document.createElement('option');
-            o.value = m.id;
-            g('destList').appendChild(o);
-        });
-    } else if (mode === 'deptUpdate') {
-        [...new Set(allData.filter(d => !d.isGhost).map(d => d.department))].forEach(d => {
-            const o = document.createElement('option');
-            o.value = d;
-            g('destList').appendChild(o);
-        });
-    }
-}
-
-// ── Execute bulk edit ──
-function runEdit() {
-    const mode = g('editMode').value;
-    const dest = g('editDest').value;
-
-    if (mode === 'hire') {
-        const hN = g('hireName').value.trim();
-        if (!hN) { alert('Please enter a name.'); return; }
-        const mgr = allData.find(d => d.id === dest);
-        allData.push({
-            id: hN, name: hN, title: 'Draft Hire',
-            parentId: dest || 'ROOT',
-            department: mgr ? mgr.department : 'Unassigned',
-            salary: g('hireSal').value || 0,
-            startDate: new Date().toLocaleDateString(),
-            rating: 'NR',
-            jobLevel: g('hireLevel').value || 'IC1',
-            email: '', city: '', state: '',
-        });
-    } else {
-        tags.forEach(name => {
-            const t = allData.find(d => d.id === name);
-            if (!t) return;
-            if (mode === 'move')            t.parentId   = dest;
-            else if (mode === 'deptUpdate') t.department = dest;
-            else if (mode === 'delete') {
-                allData.filter(d => d.parentId === t.id).forEach(r => r.parentId = t.parentId);
-                allData = allData.filter(d => d.id !== name);
-            }
-        });
-    }
-    resetAll();
-}
-
-// ── Filter / view ──
-function applyFilter() {
-    const mode = g('filterMode').value;
-    const val  = g('filterVal').value;
-    if (!val || !allData.length) return;
-
-    if (mode === 'team') {
-        const root = allData.find(d => d.id === val);
-        if (!root) return;
-        const sub = [root];
-        const kids = id => allData.forEach(d => { if (d.parentId === id) { sub.push(d); kids(d.id); } });
-        kids(val);
-        viewData = JSON.parse(JSON.stringify(sub));
-        viewData.find(d => d.id === val).parentId = null;
-        refresh();
-        orgC.setCentered(val).render();
-    } else {
-        viewData = JSON.parse(JSON.stringify(allData.filter(d => d.department === val)));
-        const ns = new Set(viewData.map(d => d.id));
-        viewData.forEach(d => { if (!ns.has(d.parentId)) d.parentId = 'VIEW_ROOT'; });
-        viewData.push({ id: 'VIEW_ROOT', name: val, isGhost: true, parentId: null });
+// ── Org chart department filter ──
+function applyOrgDeptFilter(dept) {
+    if (!allData.length) return;
+    if (!dept) {
+        viewData = JSON.parse(JSON.stringify(allData));
         refresh(true);
+        return;
     }
+    viewData = JSON.parse(JSON.stringify(allData.filter(d => d.department === dept || d.isGhost)));
+    const ns = new Set(viewData.map(d => d.id));
+    viewData.forEach(d => { if (!ns.has(d.parentId)) d.parentId = 'VIEW_ROOT'; });
+    if (!viewData.find(d => d.id === 'VIEW_ROOT')) {
+        viewData.push({ id: 'VIEW_ROOT', name: dept, isGhost: true, parentId: null });
+    }
+    refresh(true);
 }
 
-// ── Full reset ──
+// ── Full reset (called by csv.js on file load) ──
 function resetAll() {
-    tags = []; renderTags();
-    dragUndoStack = []; g('undoBtn').style.display = 'none';
-    ['globalSearch', 'filterVal', 'editTarget', 'editDest', 'dDept', 'dMgr', 'hireName', 'hireSal']
-        .forEach(id => { if (g(id)) g(id).value = ''; });
-    g('filterMode').value = 'none';
-    g('editMode').value   = 'none';
-    toggleEditUI();
+    dragUndoStack = []; dragRedoStack = [];
+    if (g('undoBtn')) g('undoBtn').style.display = 'none';
     closeSpot();
     if (allData.length) { viewData = JSON.parse(JSON.stringify(allData)); refresh(true); }
 }
@@ -497,17 +457,6 @@ initFileInput();
 // Hide demo badge when real CSV is uploaded
 g('fileInput').addEventListener('change', function () {
     g('demoBadge').style.display = 'none';
-});
-
-// Bubble-tag input: add tag when employee id matched
-g('editTarget').addEventListener('input', function (e) {
-    const v   = e.target.value;
-    const emp = allData.find(d => d.id === v);
-    if (emp && !tags.includes(v)) {
-        tags.push(v);
-        renderTags();
-        e.target.value = '';
-    }
 });
 
 // ── Scenario public API (callable from console or future UI) ──

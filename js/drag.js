@@ -339,13 +339,11 @@ function _onUp(e) {
 document.addEventListener('mousedown', function(e) {
     if (e.button !== 0) return;
 
-    // Allow drag on Org Chart page, or Scenario Studio planner when in scenario mode
-    const orgPage   = document.getElementById('pageOrgchart');
-    const ssPage    = document.getElementById('pageScenarioStudio');
-    const onOrgChart  = orgPage && orgPage.classList.contains('active');
+    // Drag only allowed inside Scenario Studio planner (main org chart is read-only)
+    const ssPage      = document.getElementById('pageScenarioStudio');
     const onSSPlanner = ssPage && ssPage.classList.contains('active') && isScenarioMode
                         && (typeof _ssView === 'undefined' || _ssView === 'planner');
-    if (!onOrgChart && !onSSPlanner) return;
+    if (!onSSPlanner) return;
 
     // Find the nearest ancestor (or self) with data-nid
     const card = e.target.closest('[data-nid]');

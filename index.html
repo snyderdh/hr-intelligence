@@ -29,9 +29,10 @@
     </div>
     <div class="nav-links">
         <button class="nav-link active" id="nlHome"       onclick="showPage('home')">Home</button>
-        <button class="nav-link"        id="nlOrgHealth"  onclick="showPage('orgHealth')">Org Health</button>
-        <button class="nav-link"        id="nlOrgchart"        onclick="showPage('orgchart')">Org Chart</button>
-        <button class="nav-link"        id="nlScenarioStudio"  onclick="showPage('scenarioStudio')">Scenario Studio</button>
+        <button class="nav-link"        id="nlOrgHealth"      onclick="showPage('orgHealth')">Org Health</button>
+        <button class="nav-link"        id="nlCompensation"   onclick="showPage('compensation')">Compensation</button>
+        <button class="nav-link"        id="nlOrgchart"       onclick="showPage('orgchart')">Org Chart</button>
+        <button class="nav-link"        id="nlScenarioStudio"  onclick="showPage('scenarioStudio')">Workforce Planning</button>
         <button class="nav-link"        id="nlDashboard"       onclick="showPage('dashboard')">Dashboard</button>
     </div>
     <div class="nav-actions">
@@ -129,7 +130,10 @@
 <!-- ═══════════════════════════════════════════════════════ PAGE: ORG HEALTH -->
 <div id="pageOrgHealth" class="page"></div>
 
-<!-- ═══════════════════════════════════════════════════ PAGE: SCENARIO STUDIO -->
+<!-- ══════════════════════════════════════════════ PAGE: COMPENSATION -->
+<div id="pageCompensation" class="page"></div>
+
+<!-- ══════════════════════════════════════════════ PAGE: WORKFORCE PLANNING -->
 <div id="pageScenarioStudio" class="page"></div>
 
 <!-- ═══════════════════════════════════════════════════════ PAGE: ORG CHART -->
@@ -143,57 +147,12 @@
                        onkeydown="if(event.key==='Enter')focusEmp(this.value)">
             </div>
             <button class="toolbar-search-btn" onclick="focusEmp(g('globalSearch').value)">Search</button>
-            <button class="toolbar-clear-btn"  onclick="clearEmpSearch()">Clear</button>
+            <select id="orgDeptFilter" class="toolbar-dept-select" onchange="applyOrgDeptFilter(this.value)"><option value="">All Departments</option></select>
             <button class="toolbar-reset-btn"  onclick="resetOrgView()">↺ Reset</button>
         </div>
-        <div id="orgToolbarActions">
-            <button class="top-btn" onclick="toggleControls()">⚙ Controls</button>
-            <button class="toolbar-export" onclick="dlCSV()">↓ Export CSV</button>
-            <button id="undoBtn" onclick="undoLastMove()" style="display:none;">↩ Undo Move</button>
-        </div>
     </div>
-
-    <!-- Collapsible control strip -->
-    <div id="controlStrip" class="hidden">
-        <div class="panel">
-            <div class="panel-label">Org Filter</div>
-            <select id="filterMode" onchange="toggleFilterUI()">
-                <option value="none">Select filter type…</option>
-                <option value="team">By Manager / Subtree</option>
-                <option value="dept">By Department</option>
-            </select>
-            <div id="filterUI" style="display:none;">
-                <input type="text" id="filterVal" list="dynList" placeholder="Enter name or dept…" style="margin-top:6px;">
-                <div style="display:flex;gap:5px;margin-top:7px;">
-                    <button class="btn btn-violet" style="flex:1;" onclick="applyFilter()">Apply Filter</button>
-                    <button class="btn btn-gray" onclick="resetAll()">Reset</button>
-                </div>
-            </div>
-        </div>
-        <div class="panel">
-            <div class="panel-label">Bulk Actions</div>
-            <select id="editMode" onchange="toggleEditUI()">
-                <option value="none">Select action…</option>
-                <option value="move">Reassign Manager</option>
-                <option value="deptUpdate">Change Department</option>
-                <option value="hire">Add New Hire</option>
-                <option value="delete">Remove Employee(s)</option>
-            </select>
-            <div id="editUI" style="display:none;margin-top:6px;">
-                <div id="bubbleSys">
-                    <div class="bubble-wrap" id="bubbleBox" onclick="g('editTarget').focus()">
-                        <input type="text" id="editTarget" class="bubble-input" list="namesList" placeholder="Type to add employees…">
-                    </div>
-                </div>
-                <div id="hireFields" style="display:none;">
-                    <input type="text"   id="hireName"  placeholder="Full Name"    style="margin-top:5px;">
-                    <input type="number" id="hireSal"   placeholder="Salary ($)"   style="margin-top:5px;">
-                    <select id="hireLevel" style="margin-top:5px;"></select>
-                </div>
-                <input type="text" id="editDest" list="destList" placeholder="Destination…" style="margin-top:5px;">
-                <button class="btn btn-amber" style="width:100%;margin-top:7px;" onclick="runEdit()">Execute</button>
-            </div>
-        </div>
+    <div id="orgReadOnlyBanner">
+        Org Chart is read-only. Go to Workforce Planning to model changes.&ensp;<a onclick="showPage('scenarioStudio')" class="org-ro-link">→ Open Workforce Planning</a>
     </div>
 
     <!-- Org chart canvas -->
@@ -333,8 +292,6 @@
 </div>
 
 <datalist id="namesList"></datalist>
-<datalist id="dynList"></datalist>
-<datalist id="destList"></datalist>
 
 <!-- Scripts: sampleData → state → csv → chart → dashboard → orgHealth → ai → drag → scenarios → scenarioStudio → app -->
 <script src="js/sampleData.js"></script>
@@ -343,6 +300,7 @@
 <script src="js/chart.js"></script>
 <script src="js/dashboard.js"></script>
 <script src="js/orgHealth.js"></script>
+<script src="js/compensation.js"></script>
 <script src="js/ai.js"></script>
 <script src="js/drag.js"></script>
 <script src="js/scenarios.js"></script>

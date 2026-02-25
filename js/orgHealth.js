@@ -2,10 +2,9 @@
 
 // Dept filter helper: called from dept table row clicks
 window._ohDeptFilter = function (dept) {
-    g('filterVal').value  = dept;
-    g('filterMode').value = 'dept';
-    applyFilter();
     showPage('orgchart');
+    applyOrgDeptFilter(dept);
+    if (g('orgDeptFilter')) g('orgDeptFilter').value = dept;
 };
 
 function renderOrgHealth() {
@@ -20,63 +19,80 @@ function renderOrgHealth() {
     }
 
     const health = orgHealth(real);
-    const { score, label, color, penalties, flags } = health;
+    const { label, color, riskCategories, flags } = health;
 
     const scoreVar = color === 'green' ? 'var(--green)' : color === 'amber' ? 'var(--amber)' : 'var(--red)';
-    const scoreBg  = color === 'green' ? 'rgba(45,155,111,0.1)' : color === 'amber' ? 'rgba(240,165,0,0.1)' : 'rgba(224,62,62,0.1)';
 
     // HTML escape helper
     const esc = s => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-    // ── SECTION A: Hero banner ──
-    const penaltyPts = penalties.reduce((s, p) => s + Math.abs(p.impact), 0);
+    // ── Metrics ──
+    const sals = real.map(d => cleanSal(d.salary)).filter(s => s > 0);
+    const totalPayroll = sals.reduce((a, b) => a + b, 0);
+
+    // ── Risk category counts ──
+    const rc        = riskCategories;
+    const highCt    = rc.filter(c => c.status === 'high').length;
+    const modCt     = rc.filter(c => c.status === 'moderate').length;
+    const healthyCt = rc.filter(c => c.status === 'healthy').length;
+    const nodataCt  = rc.filter(c => c.status === 'nodata').length;
+
+    // ── SECTION A: Hero banner with segmented risk bar ──
     const sectionA = `
     <div class="oh-hero">
-        <div class="oh-hero-score-wrap">
-            <div class="oh-hero-score" style="color:${scoreVar};">${score}</div>
-            <div class="oh-hero-denom">/100</div>
-        </div>
         <div class="oh-hero-center">
-            <div class="oh-hero-label" style="color:${scoreVar};">Organization is ${label}</div>
-            <div class="oh-score-bar-track">
-                <div class="oh-score-bar-fill" style="width:${score}%;background:${scoreVar};"></div>
+            <div class="oh-hero-label" style="color:${scoreVar};">${esc(label)}</div>
+            <div class="oh-risk-bar">
+                ${highCt    ? `<div class="oh-risk-seg oh-risk-seg-high"    style="flex:${highCt};"></div>` : ''}
+                ${modCt     ? `<div class="oh-risk-seg oh-risk-seg-moderate" style="flex:${modCt};"></div>` : ''}
+                ${healthyCt ? `<div class="oh-risk-seg oh-risk-seg-healthy"  style="flex:${healthyCt};"></div>` : ''}
+                ${nodataCt  ? `<div class="oh-risk-seg oh-risk-seg-nodata"   style="flex:${nodataCt};"></div>` : ''}
             </div>
-            <div class="oh-hero-sub">${real.length} employees · ${penalties.length} penalt${penalties.length !== 1 ? 'ies' : 'y'} fired · ${penaltyPts} pts deducted</div>
+            <div class="oh-risk-counts">
+                ${highCt    ? `<span class="oh-risk-count-high">${highCt} High Risk</span>` : ''}
+                ${modCt     ? `<span class="oh-risk-count-moderate">${modCt} Moderate</span>` : ''}
+                ${healthyCt ? `<span class="oh-risk-count-healthy">${healthyCt} Healthy</span>` : ''}
+                ${nodataCt  ? `<span class="oh-risk-count-nodata">${nodataCt} No Data</span>` : ''}
+            </div>
+            <div class="oh-hero-chips">
+                <span class="oh-chip">${real.length} employees</span>
+                <span class="oh-chip">${fmtM(totalPayroll)} payroll</span>
+                <span class="oh-chip">${rc.length} risk categories</span>
+            </div>
         </div>
-        <div class="oh-hero-badge" style="background:${scoreBg};border:1px solid ${scoreVar};color:${scoreVar};">${label.toUpperCase()}</div>
     </div>`;
 
-    // ── SECTION B: Score Breakdown ──
-    const ALL_CATS = [
-        'Tenure Risk', 'Span of Control', 'Performance Concentration',
-        'Missing Ratings', 'Low-Rated Managers', 'Compensation Equity',
-        'Succession Gaps', 'Single Points of Failure', 'Department Health',
-    ];
-    const firedCats   = new Set(penalties.map(p => p.category));
-    const workingCats = ALL_CATS.filter(c => !firedCats.has(c));
+    // ── SECTION B: Risk Breakdown ──
+    const workingCats = rc.filter(c => c.status === 'healthy' || c.status === 'nodata');
+    const concernCats = rc.filter(c => c.status === 'high' || c.status === 'moderate')
+                          .sort((a, b) => (a.status === 'high' ? 0 : 1) - (b.status === 'high' ? 0 : 1));
 
     const workingHtml = workingCats.length
-        ? workingCats.map(c => `
-            <div class="oh-breakdown-row">
-                <span class="oh-check">✓</span>
-                <span class="oh-breakdown-cat">${esc(c)}</span>
-            </div>`).join('')
+        ? workingCats.map(c => `<div class="oh-breakdown-row">
+            <span class="oh-check">${c.status === 'nodata' ? '—' : '✓'}</span>
+            <div>
+                <div class="oh-breakdown-cat">${esc(c.name)}</div>
+                <div class="oh-working-desc">${esc(c.description)}</div>
+            </div>
+        </div>`).join('')
         : '<div class="oh-breakdown-none">All categories show issues.</div>';
 
-    const concernsHtml = penalties.length
-        ? penalties.map(p => `
-            <div class="oh-concern-row">
+    const concernsHtml = concernCats.length
+        ? concernCats.map(c => {
+            const isHigh = c.status === 'high';
+            return `<div class="oh-concern-row" style="border-left-color:${isHigh ? 'var(--red)' : 'var(--amber)'};">
                 <div class="oh-concern-hd">
-                    <span class="oh-penalty-badge">${p.impact} pts</span>
-                    <span class="oh-breakdown-cat">${esc(p.category)}</span>
+                    <span class="${isHigh ? 'oh-badge-high' : 'oh-badge-moderate'}">${isHigh ? 'HIGH RISK' : 'MODERATE'}</span>
+                    <span class="oh-breakdown-cat">${esc(c.name)}</span>
                 </div>
-                <div class="oh-breakdown-desc">${esc(p.description)}</div>
-            </div>`).join('')
-        : '<div class="oh-breakdown-none" style="color:var(--green);">✓ No penalties — excellent org health!</div>';
+                <div class="oh-breakdown-desc">${esc(c.description)}</div>
+            </div>`;
+        }).join('')
+        : '<div class="oh-breakdown-none" style="color:var(--green);">✓ No concerns — excellent org health!</div>';
 
     const sectionB = `
     <div>
-        <div class="oh-section-hd">Score Breakdown</div>
+        <div class="oh-section-hd">Risk Breakdown</div>
         <div class="oh-breakdown-grid">
             <div class="oh-breakdown-col">
                 <div class="oh-breakdown-col-hd oh-col-green">✓ What's Working</div>
@@ -89,113 +105,168 @@ function renderOrgHealth() {
         </div>
     </div>`;
 
-    // ── SECTION C: Risk Flag Cards ──
+    // ── SECTION C: Risk Flag Cards (only render cards with active flags) ──
+    const SEV = {
+        high:   { col: 'var(--red)',   bg: 'rgba(224,62,62,0.08)',   label: 'HIGH RISK' },
+        medium: { col: 'var(--amber)', bg: 'rgba(240,165,0,0.08)',   label: 'MODERATE RISK' },
+        low:    { col: 'var(--muted)', bg: 'rgba(107,104,128,0.08)', label: '' },
+    };
+
     const RISK_CATS = [
         {
+            icon: '🔑', title: 'Single Points of Failure', baseSeverity: 'high',
+            getItems: f => f.singlePoints,
+            getTableHtml: f => !f.singlePoints.length ? '' : `<div class="oh-flag-tbl-wrap"><table class="oh-flag-tbl">
+                <thead><tr><th>Employee</th><th>Title</th><th>Department</th><th>Job Level</th><th>Direct Reports</th></tr></thead>
+                <tbody>${f.singlePoints.map((m, i) => `<tr class="${i % 2 ? 'oh-flag-tbl-alt' : ''}">
+                    <td class="oh-flag-tbl-name">${esc(m.name)}</td>
+                    <td>${esc(m.title || '—')}</td>
+                    <td>${esc(m.dept || '—')}</td>
+                    <td>${esc(m.jobLevel || '—')}</td>
+                    <td>${m.reportCount}</td>
+                </tr>`).join('')}</tbody>
+            </table></div>`,
+        },
+        {
             icon: '⚠️', title: 'Over-Extended Managers', baseSeverity: 'high',
-            getItems: f => [
-                ...f.overExtended.map(m => ({ primary: m.name, secondary: m.dept, detail: `${m.reportCount} direct reports — over-extended` })),
-                ...f.wideSpan.map(m => ({ primary: m.name, secondary: m.dept, detail: `${m.reportCount} direct reports — wide span` })),
-            ],
+            getItems: f => [...f.overExtended, ...f.wideSpan],
+            getTableHtml: f => {
+                const all = [
+                    ...f.overExtended.map(m => ({ ...m, span: '12+ reports' })),
+                    ...f.wideSpan.map(m => ({ ...m, span: '9–11 reports' })),
+                ];
+                return !all.length ? '' : `<div class="oh-flag-tbl-wrap"><table class="oh-flag-tbl">
+                    <thead><tr><th>Manager</th><th>Title</th><th>Department</th><th>Direct Reports</th></tr></thead>
+                    <tbody>${all.map((m, i) => `<tr class="${i % 2 ? 'oh-flag-tbl-alt' : ''}">
+                        <td class="oh-flag-tbl-name">${esc(m.name)}</td>
+                        <td>${esc(m.title || '—')}</td>
+                        <td>${esc(m.dept || '—')}</td>
+                        <td>${m.reportCount} <span class="oh-tbl-note">(${m.span})</span></td>
+                    </tr>`).join('')}</tbody>
+                </table></div>`;
+            },
         },
         {
             icon: '🔁', title: 'Succession Gaps', baseSeverity: 'medium',
-            getItems: f => f.successionGaps.map(m => ({ primary: m.name, secondary: m.dept, detail: `${m.reportCount} reports · no high-rated successor` })),
+            getItems: f => f.successionGaps,
+            getTableHtml: f => !f.successionGaps.length ? '' : `<div class="oh-flag-tbl-wrap"><table class="oh-flag-tbl">
+                <thead><tr><th>Manager</th><th>Title</th><th>Department</th><th>Reports</th></tr></thead>
+                <tbody>${f.successionGaps.map((m, i) => `<tr class="${i % 2 ? 'oh-flag-tbl-alt' : ''}">
+                    <td class="oh-flag-tbl-name">${esc(m.name)}</td>
+                    <td>${esc(m.title || '—')}</td>
+                    <td>${esc(m.dept || '—')}</td>
+                    <td>${m.reportCount}</td>
+                </tr>`).join('')}</tbody>
+            </table></div>`,
         },
         {
             icon: '💰', title: 'Compensation Equity', baseSeverity: 'medium',
-            getItems: f => f.compensationEquity.map(g => ({
-                primary: `${g.dept} · ${g.level}`,
-                secondary: '',
-                detail: `${(g.variance * 100 - 100).toFixed(0)}% pay spread ($${Math.round(g.minSal / 1000)}K – $${Math.round(g.maxSal / 1000)}K)`,
-            })),
-        },
-        {
-            icon: '🔑', title: 'Single Points of Failure', baseSeverity: 'high',
-            getItems: f => f.singlePoints.map(m => ({ primary: m.name, secondary: m.dept, detail: `${m.jobLevel} · ${m.reportCount} reports · sole occupant at this level` })),
+            getItems: f => f.compensationEquity,
+            getTableHtml: f => !f.compensationEquity.length ? '' : `<div class="oh-flag-tbl-wrap"><table class="oh-flag-tbl">
+                <thead><tr><th>Department</th><th>Job Level</th><th>Min Salary</th><th>Max Salary</th><th>Spread</th></tr></thead>
+                <tbody>${f.compensationEquity.map((eq, i) => `<tr class="${i % 2 ? 'oh-flag-tbl-alt' : ''}">
+                    <td class="oh-flag-tbl-name">${esc(eq.dept)}</td>
+                    <td>${esc(eq.level)}</td>
+                    <td>${fmtK(eq.minSal)}</td>
+                    <td>${fmtK(eq.maxSal)}</td>
+                    <td>${((eq.variance - 1) * 100).toFixed(0)}%</td>
+                </tr>`).join('')}</tbody>
+            </table></div>`,
         },
         {
             icon: '⭐', title: 'Low-Rated Managers', baseSeverity: 'high',
-            getItems: f => f.lowRatedManagers.map(m => ({ primary: m.name, secondary: m.dept, detail: `Rating ${m.rating}/5` })),
+            getItems: f => f.lowRatedManagers,
+            getTableHtml: f => !f.lowRatedManagers.length ? '' : `<div class="oh-flag-tbl-wrap"><table class="oh-flag-tbl">
+                <thead><tr><th>Manager</th><th>Title</th><th>Department</th><th>Rating</th></tr></thead>
+                <tbody>${f.lowRatedManagers.map((m, i) => `<tr class="${i % 2 ? 'oh-flag-tbl-alt' : ''}">
+                    <td class="oh-flag-tbl-name">${esc(m.name)}</td>
+                    <td>${esc(m.title || '—')}</td>
+                    <td>${esc(m.dept || '—')}</td>
+                    <td><span style="color:var(--red);font-weight:800;">${m.rating}★</span></td>
+                </tr>`).join('')}</tbody>
+            </table></div>`,
         },
         {
             icon: '🏢', title: 'Department Health', baseSeverity: 'medium',
-            getItems: f => f.deptHealth.map(d => ({ primary: d.dept, secondary: `${d.headcount} employees`, detail: `Avg rating ${d.avgRating.toFixed(2)}/5 — below threshold` })),
+            getItems: f => f.deptHealth,
+            getTableHtml: f => !f.deptHealth.length ? '' : `<div class="oh-flag-tbl-wrap"><table class="oh-flag-tbl">
+                <thead><tr><th>Department</th><th>Headcount</th><th>Avg Rating</th></tr></thead>
+                <tbody>${f.deptHealth.map((d, i) => `<tr class="${i % 2 ? 'oh-flag-tbl-alt' : ''}">
+                    <td class="oh-flag-tbl-name">${esc(d.dept)}</td>
+                    <td>${d.headcount}</td>
+                    <td><span style="color:var(--red);font-weight:800;">${d.avgRating.toFixed(2)}★</span></td>
+                </tr>`).join('')}</tbody>
+            </table></div>`,
         },
         {
             icon: '📅', title: 'Tenure Risk', baseSeverity: 'medium',
-            getItems: f => f.tenureRisk
-                ? [{ primary: `Avg tenure ${f.tenureRisk.avgT.toFixed(1)} years`, secondary: '', detail: f.tenureRisk.level === 'critical' ? 'Below 1 yr — critical attrition risk' : f.tenureRisk.level === 'warning' ? 'Below 2 yrs — below healthy baseline' : 'Below 3 yrs — slightly below average' }]
-                : [],
+            getItems: f => f.tenureRisk ? [f.tenureRisk] : [],
+            getTableHtml: f => !f.tenureRisk ? '' : `<div class="oh-flag-stat">
+                <span class="oh-flag-stat-val" style="color:var(--amber);">${f.tenureRisk.avgT.toFixed(1)}<span style="font-size:15px;font-weight:700;"> yrs avg</span></span>
+                <span class="oh-flag-stat-lbl">${f.tenureRisk.level === 'critical' ? 'Critical attrition risk — average tenure under 1 year' : f.tenureRisk.level === 'warning' ? 'Below healthy baseline — average tenure under 2 years' : 'Slightly below average — consider improving retention'}</span>
+            </div>`,
         },
         {
             icon: '❓', title: 'Missing Ratings', baseSeverity: 'low',
-            getItems: f => f.missingRatings > 0
-                ? [{ primary: `${f.missingRatings} employee${f.missingRatings !== 1 ? 's' : ''} unrated`, secondary: '', detail: 'Not included in current performance review cycle' }]
-                : [],
+            getItems: f => f.missingRatings > 0 ? [{ count: f.missingRatings }] : [],
+            getTableHtml: f => f.missingRatings <= 0 ? '' : `<div class="oh-flag-stat">
+                <span class="oh-flag-stat-val" style="color:var(--muted);">${f.missingRatings}</span>
+                <span class="oh-flag-stat-lbl">employee${f.missingRatings !== 1 ? 's' : ''} with no performance rating on file</span>
+            </div>`,
+        },
+        {
+            icon: '📉', title: 'Performance Concentration', baseSeverity: 'high',
+            getItems: f => f.perfConcentration,
+            getTableHtml: f => {
+                const pc = f.perfConcentration[0];
+                return !pc ? '' : `<div class="oh-flag-stat">
+                    <span class="oh-flag-stat-val" style="color:var(--red);">${pc.pct.toFixed(1)}%</span>
+                    <span class="oh-flag-stat-lbl">${pc.count} employees rated ≤2★ — ${pc.pct >= 20 ? 'high' : 'elevated'} low-performer density</span>
+                </div>`;
+            },
         },
     ];
 
-    const SEV = {
-        high:   { col: 'var(--red)',   bg: 'rgba(224,62,62,0.08)',   label: 'High Risk' },
-        medium: { col: 'var(--amber)', bg: 'rgba(240,165,0,0.08)',   label: 'Medium Risk' },
-        low:    { col: 'var(--muted)', bg: 'rgba(107,104,128,0.08)', label: 'Low Risk' },
-        clear:  { col: 'var(--green)', bg: 'rgba(45,155,111,0.08)',  label: 'Clear' },
-    };
-
-    const flagCards = RISK_CATS.map(cat => {
-        const items     = cat.getItems(flags);
-        const hasIssues = items.length > 0;
-        const sev       = hasIssues ? SEV[cat.baseSeverity] : SEV.clear;
-
-        const itemsHtml = hasIssues
-            ? items.map(item => `
-                <div class="oh-flag-item">
-                    <div class="oh-flag-item-primary">${esc(item.primary)}</div>
-                    ${item.secondary ? `<div class="oh-flag-item-sec">${esc(item.secondary)}</div>` : ''}
-                    <div class="oh-flag-item-detail">${esc(item.detail)}</div>
-                </div>`).join('')
-            : '<div class="oh-flag-ok">✓ No issues detected</div>';
-
-        const countBadge = hasIssues
-            ? `<span class="oh-flag-count" style="background:${sev.bg};color:${sev.col};">${items.length}</span>`
-            : '';
-
-        return `
-        <div class="oh-flag-card" style="opacity:${hasIssues ? '1' : '0.52'};">
-            <div class="oh-flag-card-hd">
-                <span class="oh-flag-icon">${cat.icon}</span>
-                <div class="oh-flag-title-wrap">
-                    <div class="oh-flag-title">${esc(cat.title)} ${countBadge}</div>
-                    <span class="oh-severity-badge" style="background:${sev.bg};color:${sev.col};">${sev.label}</span>
+    const activeFlagCards = RISK_CATS
+        .filter(cat => cat.getItems(flags).length > 0)
+        .map(cat => {
+            const items = cat.getItems(flags);
+            const sev   = SEV[cat.baseSeverity];
+            return `
+            <div class="oh-flag-card">
+                <div class="oh-flag-card-hd">
+                    <span class="oh-flag-icon">${cat.icon}</span>
+                    <div class="oh-flag-title-wrap">
+                        <div class="oh-flag-title">${esc(cat.title)} <span class="oh-flag-count" style="background:${sev.bg};color:${sev.col};">${items.length}</span></div>
+                        ${sev.label ? `<span class="oh-severity-badge" style="background:${sev.bg};color:${sev.col};">${sev.label}</span>` : ''}
+                    </div>
                 </div>
-            </div>
-            <div class="oh-flag-items">${itemsHtml}</div>
-        </div>`;
-    }).join('');
+                <div class="oh-flag-items">${cat.getTableHtml(flags)}</div>
+            </div>`;
+        });
 
-    const sectionC = `
-    <div>
-        <div class="oh-section-hd">Risk Signals</div>
-        <div class="oh-flags-grid">${flagCards}</div>
-    </div>`;
+    const sectionC = activeFlagCards.length
+        ? `<div>
+            <div class="oh-section-hd">Risk Signals</div>
+            <div class="oh-flags-grid">${activeFlagCards.join('')}</div>
+        </div>`
+        : `<div class="oh-trend-note" style="color:var(--green);border-color:rgba(45,155,111,0.4);background:rgba(45,155,111,0.06);">✓ All risk signal checks are clear — excellent organizational health.</div>`;
 
-    // ── SECTION D: Department Health Grid ──
+    // ── SECTION D: Department Overview table ──
     const depts = [...new Set(real.map(d => d.department).filter(Boolean))].sort();
 
     const deptRows = depts.map(dept => {
-        const de      = real.filter(d => d.department === dept);
-        const hc      = de.length;
-        const sals    = de.map(d => cleanSal(d.salary)).filter(s => s > 0);
-        const avgSal  = sals.length ? sals.reduce((a, b) => a + b, 0) / sals.length : 0;
-        const rated   = de.filter(d => { const r = pRat(d.rating); return r !== 'NR'; });
-        const avgRat  = rated.length ? rated.reduce((s, d) => s + pRat(d.rating), 0) / rated.length : null;
-        const mgrSet  = new Set(de.map(d => d.parentId).filter(Boolean));
-        const dMgrs   = de.filter(d => mgrSet.has(d.id));
-        const mgrCt   = dMgrs.length;
-        const dSpan   = mgrCt ? ((hc - mgrCt) / mgrCt).toFixed(1) : '—';
+        const de     = real.filter(d => d.department === dept);
+        const hc     = de.length;
+        const dSals  = de.map(d => cleanSal(d.salary)).filter(s => s > 0);
+        const avgSal = dSals.length ? dSals.reduce((a, b) => a + b, 0) / dSals.length : 0;
+        const rated  = de.filter(d => { const r = pRat(d.rating); return r !== 'NR'; });
+        const avgRat = rated.length ? rated.reduce((s, d) => s + pRat(d.rating), 0) / rated.length : null;
+        const mgrSet = new Set(de.map(d => d.parentId).filter(Boolean));
+        const dMgrs  = de.filter(d => mgrSet.has(d.id));
+        const mgrCt  = dMgrs.length;
+        const dSpan  = mgrCt ? ((hc - mgrCt) / mgrCt).toFixed(1) : '—';
 
-        // Mini health per dept
         let mini = 100;
         if (avgRat !== null && avgRat < 2.5) mini -= 30;
         else if (avgRat !== null && avgRat < 3.5) mini -= 10;
@@ -231,9 +302,9 @@ function renderOrgHealth() {
         </div>`;
     }).join('');
 
-    const sectionD = `
+    const sectionD = depts.length ? `
     <div>
-        <div class="oh-section-hd">Department Health</div>
+        <div class="oh-section-hd">Department Overview</div>
         <div class="oh-dept-table">
             <div class="oh-dept-header">
                 <div>Department</div>
@@ -246,12 +317,12 @@ function renderOrgHealth() {
             </div>
             ${deptRows}
         </div>
-    </div>`;
+    </div>` : '';
 
-    // ── SECTION E: Trend Note ──
+    // ── SECTION E: Trend note ──
     const sectionE = `
     <div class="oh-trend-note">
-        📊 Org Health score is calculated from live data. Load a scenario in Scenario Studio to model how structural changes affect your score.
+        📊 Risk analysis is calculated from live data. Load a scenario in Workforce Planning to model how structural changes affect your org health.
     </div>`;
 
     // ── Render ──

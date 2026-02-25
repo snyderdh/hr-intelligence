@@ -12,16 +12,17 @@ function refresh(fit = false) {
     updateAIStatus();
     g('emptyState').classList.add('hidden');
 
-    // Rebuild datalist options
+    // Rebuild datalist options and filters
     const mgrs  = [...new Set(allData.filter(d => allData.some(e => e.parentId === d.id)).map(m => m.id))].sort();
     const depts = [...new Set(allData.filter(d => !d.isGhost).map(d => d.department))].sort();
-    const levs  = [...new Set(allData.filter(d => !d.isGhost).map(d => d.jobLevel))].sort();
 
     g('dMgr').innerHTML  = '<option value="">All Teams</option>'  + mgrs.map(m  => `<option value="${m}">${m}</option>`).join('');
     g('dDept').innerHTML = '<option value="">All Departments</option>' + depts.map(d => `<option value="${d}">${d}</option>`).join('');
     g('namesList').innerHTML = allData.filter(d => !d.isGhost).map(d => `<option value="${d.id}"></option>`).join('');
-    g('dynList').innerHTML   = [...depts, ...mgrs].map(v => `<option value="${v}"></option>`).join('');
-    g('hireLevel').innerHTML = '<option value="">Job Level…</option>' + levs.map(l => `<option value="${l}">${l}</option>`).join('');
+    if (g('orgDeptFilter')) {
+        const cur = g('orgDeptFilter').value;
+        g('orgDeptFilter').innerHTML = '<option value="">All Departments</option>' + depts.map(d => `<option value="${d}"${d === cur ? ' selected' : ''}>${d}</option>`).join('');
+    }
 
     // Build a numeric index map so data-nid values are plain integers (avoids content filters)
     // _nidMap[integer] = real node id string
@@ -39,7 +40,7 @@ function refresh(fit = false) {
     orgC
         .data(viewData)
         .nodeWidth(() => 220)
-        .nodeHeight(() => 96)
+        .nodeHeight(() => 86)
         .compact(true)
         .nodeContent(d => {
             if (d.data.isGhost) {
@@ -110,6 +111,7 @@ window.spotById = function (id) {
 function closeSpot() {
     g('spotlight').style.display = 'none';
 }
+window.closeSpotlight = closeSpot;
 
 function focusEmp(name) {
     const t = allData.find(d => d.id === name);
