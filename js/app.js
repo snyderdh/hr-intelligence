@@ -383,6 +383,51 @@ function renderHome() {
     g('cardPayrollList').innerHTML = topPayDepts.map(([dept, total]) =>
         `<div class="insight-row"><span class="insight-row-lbl">${dept}</span><span class="insight-row-val">${fmtM(total)}</span></div>`
     ).join('');
+
+    // ── Compensation tile ──
+    const compData = (typeof enrichCompData === 'function') ? enrichCompData(real) : real;
+    const compPayroll = compData.reduce((a, d) => {
+        const s = typeof d.salary === 'number' ? d.salary : cleanSal(d.salary);
+        return a + (s > 0 ? s : 0);
+    }, 0);
+    const ratios = compData.map(d => d.compaRatio).filter(r => typeof r === 'number' && r > 0);
+    const avgRatio = ratios.length ? ratios.reduce((a, b) => a + b, 0) / ratios.length : null;
+    const belowMinCt = compData.filter(d => d.belowMin === true).length;
+    const _now = Date.now();
+    const flightCt = compData.filter(function (d) {
+        const r = pRat(d.rating);
+        if (r === 'NR') return false;
+        const ratio = typeof d.compaRatio === 'number' ? d.compaRatio
+            : (d.bandMid > 0 ? cleanSal(d.salary) / d.bandMid : 0);
+        const tenure = d.startDate ? (_now - new Date(d.startDate).getTime()) / (1000 * 60 * 60 * 24 * 365.25) : 0;
+        return (r >= 4 && ratio < 1.0 && tenure > 1) || (r === 3 && ratio < 1.0 && tenure > 2);
+    }).length;
+
+    const ratioEl = g('tileCompRatio');
+    if (ratioEl) {
+        if (avgRatio !== null) {
+            ratioEl.textContent = avgRatio.toFixed(2);
+            ratioEl.style.color = (avgRatio >= 0.95 && avgRatio <= 1.05) ? 'var(--green)' : 'var(--amber)';
+        } else {
+            ratioEl.textContent = '—';
+            ratioEl.style.color = '';
+        }
+    }
+    const belowEl = g('tileCompBelowMin');
+    if (belowEl) {
+        belowEl.textContent = belowMinCt;
+        belowEl.style.color = belowMinCt > 0 ? 'var(--red)' : 'var(--green)';
+    }
+    const flightEl = g('tileCompFlight');
+    if (flightEl) {
+        flightEl.textContent = flightCt;
+        flightEl.style.color = flightCt > 0 ? 'var(--red)' : 'var(--green)';
+    }
+    const payEl = g('tileCompPayroll');
+    if (payEl) {
+        payEl.textContent = fmtM(compPayroll);
+        payEl.style.color = '';
+    }
 }
 
 // ── Top-bar panel toggles ──
