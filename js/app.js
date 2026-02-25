@@ -478,6 +478,7 @@ initFileInput();
         [...new Set(allData.filter(d => d.department).map(d => d.department))]
             .forEach((d, i) => { deptCol[d] = PAL[i % PAL.length]; });
         viewData = JSON.parse(JSON.stringify(allData));
+        window._usingDemoData = true;
         g('demoBadge').style.display = 'inline-flex';
         console.log('[Canopy] allData:', allData.length, '| viewData:', viewData.length, '| depts:', Object.keys(deptCol).length);
     } catch (e) {
@@ -503,9 +504,10 @@ initFileInput();
 // This fires synchronously (before FileReader.onload), so allData/viewData
 // are clean before the async parse completes.
 g('fileInput').addEventListener('change', function () {
-    // Reset data arrays
-    allData  = [];
-    viewData = [];
+    // Mutate in-place so any closures holding a reference see an empty array,
+    // rather than reassigning the global and leaving stale references behind.
+    allData.length  = 0;
+    viewData.length = 0;
 
     // Exit scenario mode and clear scenario state
     if (typeof isScenarioMode    !== 'undefined') isScenarioMode    = false;

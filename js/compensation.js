@@ -35,6 +35,11 @@ function getBandField(emp) {
 // When band data (bandMin/Mid/Max) is already present from a CSV upload, those
 // values are used as-is. Fields are only calculated when missing.
 function enrichCompData(employees) {
+    // FIX 3 diagnostic — shows exactly what data enrichCompData is seeing
+    console.log('[Canopy] enrichCompData called. Demo mode:', window._usingDemoData,
+        'First employee bandMid raw:', employees.length ? employees[0].bandMid : 'no employees',
+        'BandMax raw:', employees.length ? employees[0].BandMax : 'no employees');
+
     const bandMidByLevel = {
         'IC1': 58000,  'IC2': 75000,  'IC3': 98000,  'IC4': 125000,
         'IC5': 155000, 'IC6': 190000,

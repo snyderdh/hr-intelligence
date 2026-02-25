@@ -341,8 +341,22 @@ function initFileInput() {
                 }
             });
 
-            allData = employees;
+            // Mutate in-place — avoids reference issues if anything held a pointer
+            // to the old allData array (e.g. closures from the startup IIFE).
+            allData.length = 0;
+            employees.forEach(function(emp) { allData.push(emp); });
             allData.push({ id: 'ROOT', name: 'Organization', isGhost: true, parentId: null });
+
+            // Mirror into viewData in-place before resetAll() takes over
+            viewData.length = 0;
+            employees.forEach(function(emp) { viewData.push(JSON.parse(JSON.stringify(emp))); });
+            viewData.push({ id: 'ROOT', name: 'Organization', isGhost: true, parentId: null });
+
+            window._usingDemoData = false;
+            console.log('[Canopy] Upload complete. allData has',
+                allData.filter(function(d) { return !d.isGhost; }).length,
+                'employees. Sample:', allData[0] && allData[0].name,
+                'bandMid:', allData[0] && allData[0].bandMid);
 
             // Assign department colours
             deptCol = {};
