@@ -21,6 +21,11 @@ let _startY        = 0;
 let _activeDragCol = '#64748b';
 let _overlay       = null;
 
+// ── Cost delta state ──
+let _dragSubtreeCost  = 0;   // sum of dragged employee + all descendants salaries
+let _dragSubtreeCount = 0;   // number of reports moving with the dragged node
+let _costBadge        = null; // floating badge element
+
 const DRAG_THRESHOLD = 6;
 
 // ── Descendant guard ──
@@ -48,6 +53,24 @@ function idToNid(nodeId) {
         ? String(window._nidRev[nodeId]) : null;
 }
 
+// ── Compute subtree cost (employee + all descendants) ──
+function subtreeCost(rootId) {
+    let total = 0, count = 0;
+    const queue = [rootId];
+    const seen  = new Set();
+    while (queue.length) {
+        const id = queue.shift();
+        if (seen.has(id)) continue;
+        seen.add(id);
+        const node = allData.find(d => d.id === id);
+        if (!node || node.isGhost) continue;
+        if (id !== rootId) count++;
+        total += cleanSal(node.salary);
+        allData.filter(d => d.parentId === id && !d.isGhost).forEach(c => queue.push(c.id));
+    }
+    return { total, count };
+}
+
 // ── Ghost label that follows the cursor ──
 function createGhost(name, col) {
     removeGhost();
@@ -57,11 +80,11 @@ function createGhost(name, col) {
     ghost.style.cssText = [
         'position:fixed', 'pointer-events:none', 'z-index:999999',
         'padding:6px 13px', 'border-radius:8px',
-        'background:#1e293b', 'border:2px solid ' + col,
-        'color:#e2e8f0', 'font-size:11px', 'font-weight:700',
-        "font-family:'DM Sans',sans-serif",
-        'box-shadow:0 8px 24px rgba(0,0,0,0.7)',
-        'opacity:0.93', 'white-space:nowrap',
+        'background:#ffffff', 'border:2px solid ' + col,
+        'color:#1a1a2e', 'font-size:11px', 'font-weight:700',
+        "font-family:'Nunito',sans-serif",
+        'box-shadow:0 4px 16px rgba(180,160,130,0.28)',
+        'opacity:0.95', 'white-space:nowrap',
         'transform:translate(12px,-50%)',
         'transition:border-color 0.12s',
         'left:-9999px', 'top:-9999px',
@@ -76,6 +99,42 @@ function removeGhost() {
     const old = document.getElementById('dragGhost');
     if (old) old.remove();
     _dragGhost = null;
+}
+
+// ── Cost badge — shows near cursor with employee info ──
+function createCostBadge(name, salary, reportCount) {
+    removeCostBadge();
+    const badge = document.createElement('div');
+    badge.id = 'dragCostBadge';
+    const reports = reportCount > 0 ? ` +${reportCount} report${reportCount !== 1 ? 's' : ''}` : '';
+    badge.innerHTML = `
+        <div style="font-weight:800;font-size:11px;color:#1a1a2e;">${name}</div>
+        <div style="font-size:10px;color:#e85d3d;font-weight:700;margin-top:2px;">${fmtK(salary)}${reports}</div>
+    `;
+    badge.style.cssText = [
+        'position:fixed', 'pointer-events:none', 'z-index:999998',
+        'padding:7px 12px', 'border-radius:10px',
+        'background:#ffffff',
+        'border:1px solid #e8e4dc',
+        'box-shadow:0 4px 20px rgba(180,160,130,0.30)',
+        'white-space:nowrap',
+        "font-family:'Nunito',sans-serif",
+        'transform:translate(-50%, calc(-100% - 14px))',
+        'left:-9999px', 'top:-9999px',
+        'opacity:0', 'transition:opacity 0.12s',
+    ].join(';');
+    document.body.appendChild(badge);
+    requestAnimationFrame(() => { badge.style.opacity = '1'; });
+    _costBadge = badge;
+    return badge;
+}
+function moveCostBadge(x, y) {
+    if (_costBadge) { _costBadge.style.left = x + 'px'; _costBadge.style.top = y + 'px'; }
+}
+function removeCostBadge() {
+    const old = document.getElementById('dragCostBadge');
+    if (old) old.remove();
+    _costBadge = null;
 }
 
 // ── Full-screen overlay — captures all mouse events during drag ──
@@ -115,17 +174,103 @@ function setDropHighlight(nodeId, on) {
     el.classList.toggle('drag-drop-target', on);
 }
 
+// ── Drop toast notification ──
+let _toastTimer = null;
+function showDropToast(sourceName, targetName, costImpact) {
+    const existing = document.getElementById('dropToast');
+    if (existing) { existing.remove(); clearTimeout(_toastTimer); }
+
+    const impactStr = costImpact === 0
+        ? '<span style="color:var(--green);font-weight:800;">No cost impact</span>'
+        : `<span style="color:var(--accent);font-weight:800;">${costImpact > 0 ? '+' : ''}${fmtK(costImpact)} impact</span>`;
+
+    const toast = document.createElement('div');
+    toast.id = 'dropToast';
+    toast.innerHTML = `
+        <div style="display:flex;align-items:center;gap:9px;">
+            <div style="font-size:15px;">✓</div>
+            <div>
+                <div style="font-weight:800;font-size:12px;color:#1a1a2e;">
+                    ${sourceName} → ${targetName}
+                </div>
+                <div style="font-size:11px;margin-top:2px;">${impactStr}</div>
+            </div>
+            <div id="dropToastClose" style="margin-left:auto;cursor:pointer;color:#6b6880;font-size:16px;line-height:1;padding:2px 4px;" onclick="document.getElementById('dropToast').remove()">×</div>
+        </div>
+    `;
+    toast.style.cssText = [
+        'position:fixed',
+        'top:72px',          // just below nav
+        'left:50%',
+        'transform:translateX(-50%) translateY(-8px)',
+        'z-index:200000',
+        'background:#ffffff',
+        'border:1px solid #e8e4dc',
+        'border-left:3px solid #2d9b6f',
+        'border-radius:14px',
+        'padding:12px 16px',
+        'box-shadow:0 8px 32px rgba(180,160,130,0.22)',
+        "font-family:'Nunito',sans-serif",
+        'white-space:nowrap',
+        'opacity:0',
+        'transition:opacity 0.2s, transform 0.2s',
+        'min-width:280px',
+    ].join(';');
+    document.body.appendChild(toast);
+
+    // Animate in
+    requestAnimationFrame(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateX(-50%) translateY(0)';
+    });
+
+    // Auto-dismiss after 3s
+    _toastTimer = setTimeout(() => {
+        if (!toast.parentNode) return;
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(-50%) translateY(-8px)';
+        setTimeout(() => { if (toast.parentNode) toast.remove(); }, 220);
+    }, 3000);
+}
+
 // ── Commit the move ──
 function commitMove(sourceId, targetId) {
     const sourceNode = allData.find(d => d.id === sourceId);
     if (!sourceNode) return;
-    dragUndoStack.push({ id: sourceId, oldParentId: sourceNode.parentId });
-    g('undoBtn').style.display = 'flex';
+
+    const oldParentId = sourceNode.parentId;
+    const newParentId = targetId;
+
+    // Push to undo stack (scenario-aware)
+    dragUndoStack.push({ id: sourceId, oldParentId, newParentId });
+    dragRedoStack = []; // new move clears redo stack
+    if (g('undoBtn')) g('undoBtn').style.display = 'flex';
+    if (typeof _ssUpdateUndoRedo === 'function') _ssUpdateUndoRedo();
+
     [allData, viewData].forEach(arr => {
         const n = arr.find(d => d.id === sourceId);
-        if (n) n.parentId = targetId;
+        if (n) n.parentId = newParentId;
     });
-    refresh(false);
+
+    // Auto-save if in scenario mode
+    if (typeof _autoSaveScenario === 'function') _autoSaveScenario();
+
+    // Compute cost impact (across dept boundaries)
+    const srcDept = sourceNode.department;
+    const tgt = allData.find(d => d.id === targetId);
+    const tgtDept = tgt ? tgt.department : null;
+    // Currently shows $0 if same dept, subtree cost as impact if crossing dept boundary.
+    // This wires the calculation — extend the formula as product evolves.
+    const costImpact = (srcDept && tgtDept && srcDept !== tgtDept) ? _dragSubtreeCost : 0;
+
+    const targetNode = allData.find(d => d.id === targetId);
+    showDropToast(
+        sourceNode.name,
+        targetNode ? targetNode.name : targetId,
+        costImpact
+    );
+
+    if (typeof _smartRefresh === 'function') _smartRefresh(false); else refresh(false);
 }
 
 // ── Drag move handler (on overlay) ──
@@ -138,12 +283,17 @@ function _onMove(e) {
         _dragMoved = true;
         const srcNode = allData.find(d => d.id === _dragSourceId);
         _dragGhost = createGhost(srcNode ? srcNode.name : _dragSourceId, _activeDragCol);
+        // Show cost badge
+        if (srcNode) {
+            createCostBadge(srcNode.name, cleanSal(srcNode.salary), _dragSubtreeCount);
+        }
         const srcNid = idToNid(_dragSourceId);
         const srcCard = document.querySelector('[data-nid="' + (srcNid !== null ? srcNid : CSS.escape(_dragSourceId)) + '"]');
         if (srcCard) srcCard.classList.add('drag-source');
     }
 
     moveGhost(cx, cy);
+    moveCostBadge(cx, cy);
 
     const hoverId = nodeIdAtPoint(cx, cy);
     if (hoverId !== _dropTargetId) {
@@ -152,7 +302,7 @@ function _onMove(e) {
         if (hoverId && hoverId !== _dragSourceId && !isDescendantOf(hoverId, _dragSourceId)) {
             _dropTargetId = hoverId;
             setDropHighlight(_dropTargetId, true);
-            if (_dragGhost) _dragGhost.style.borderColor = '#10b981';
+            if (_dragGhost) _dragGhost.style.borderColor = '#2d9b6f';
         } else {
             if (_dragGhost) _dragGhost.style.borderColor = _activeDragCol;
         }
@@ -168,6 +318,7 @@ function _onUp(e) {
     if (srcCard) srcCard.classList.remove('drag-source');
     if (_dropTargetId) setDropHighlight(_dropTargetId, false);
     removeGhost();
+    removeCostBadge();
 
     const sourceId = _dragSourceId;
     const targetId = _dropTargetId;
@@ -184,9 +335,17 @@ function _onUp(e) {
 
 // ── Delegated mousedown on document ──
 // Catches clicks on any [data-nid] card, including ones added after initial render.
-// No per-card listener attachment needed — works automatically for expand/collapse too.
+// Only active when the Org Chart page is visible — prevents interference with nav clicks.
 document.addEventListener('mousedown', function(e) {
     if (e.button !== 0) return;
+
+    // Allow drag on Org Chart page, or Scenario Studio planner when in scenario mode
+    const orgPage   = document.getElementById('pageOrgchart');
+    const ssPage    = document.getElementById('pageScenarioStudio');
+    const onOrgChart  = orgPage && orgPage.classList.contains('active');
+    const onSSPlanner = ssPage && ssPage.classList.contains('active') && isScenarioMode
+                        && (typeof _ssView === 'undefined' || _ssView === 'planner');
+    if (!onOrgChart && !onSSPlanner) return;
 
     // Find the nearest ancestor (or self) with data-nid
     const card = e.target.closest('[data-nid]');
@@ -207,20 +366,30 @@ document.addEventListener('mousedown', function(e) {
     const n = allData.find(d => d.id === nodeId);
     _activeDragCol = n ? (deptCol[n.department] || '#64748b') : '#64748b';
 
+    // Pre-compute subtree cost at drag start
+    if (n) {
+        const st = subtreeCost(nodeId);
+        _dragSubtreeCost  = st.total;
+        _dragSubtreeCount = st.count;
+    }
+
     _overlay = createOverlay();
 }, true); // capture phase so we beat d3-zoom
 
 // ── initDrag: no-op kept for compatibility (delegation handles everything) ──
 function initDrag() {}
 
-// ── Undo ──
+// ── Undo (scenario-aware) ──
 function undoLastMove() {
     if (!dragUndoStack.length) return;
-    const { id, oldParentId } = dragUndoStack.pop();
+    const { id, oldParentId, newParentId } = dragUndoStack.pop();
+    dragRedoStack.push({ id, oldParentId, newParentId });
     [allData, viewData].forEach(arr => {
         const n = arr.find(d => d.id === id);
         if (n) n.parentId = oldParentId;
     });
-    if (!dragUndoStack.length) g('undoBtn').style.display = 'none';
-    refresh(false);
+    if (!dragUndoStack.length && g('undoBtn')) g('undoBtn').style.display = 'none';
+    if (typeof _ssUpdateUndoRedo === 'function') _ssUpdateUndoRedo();
+    if (typeof _autoSaveScenario === 'function') _autoSaveScenario();
+    if (typeof _smartRefresh === 'function') _smartRefresh(false); else refresh(false);
 }

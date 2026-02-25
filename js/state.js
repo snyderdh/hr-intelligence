@@ -9,7 +9,131 @@ let drillMode = 'headcount'; // active dashboard drill: 'headcount'|'salary'|'ti
 let tags      = [];          // selected employee IDs in the bulk-action bubble input
 let aiHist        = [];      // Claude conversation history [{role, content}]
 let aiLoading     = false;   // prevent concurrent AI requests
-let dragUndoStack = [];      // [{id, oldParentId}] — drag-and-drop undo history
+let dragUndoStack = [];      // [{id, oldParentId, newParentId, scenarioId}] — drag undo
+let dragRedoStack = [];      // [{id, oldParentId, newParentId}] — drag redo
+
+// ── Scenario management ──
+// A scenario is a named snapshot of org data users can freely edit without
+// touching the baseline live data. Stored in localStorage for persistence.
+let scenarios         = {};    // { [id]: { id, name, description, createdAt, data: [...] } }
+let currentScenarioId = null;  // null = live data, string = scenario id
+let isScenarioMode    = false; // true when viewing / editing a scenario
+let _liveDataSnapshot = null;  // deep copy of allData before entering a scenario
+
+// ── Load scenarios from localStorage on startup ──
+(function _hydrateScenarios() {
+    try {
+        const raw = localStorage.getItem('canopy_scenarios');
+        if (raw) scenarios = JSON.parse(raw);
+    } catch (e) {
+        scenarios = {};
+    }
+})();
+
+function _persistScenarios() {
+    try { localStorage.setItem('canopy_scenarios', JSON.stringify(scenarios)); }
+    catch (e) { console.warn('[Canopy] Could not persist scenarios:', e); }
+}
+
+// ── Save current allData as a named scenario ──
+function saveScenario(name, description) {
+    if (!name || !name.trim()) { alert('Please provide a scenario name.'); return null; }
+    const id = 'sc_' + Date.now();
+    const real = allData.filter(d => !d.isGhost);
+    scenarios[id] = {
+        id,
+        name: name.trim(),
+        description: (description || '').trim(),
+        createdAt: new Date().toISOString(),
+        data: JSON.parse(JSON.stringify(real)),
+    };
+    _persistScenarios();
+    console.log('[Canopy] Saved scenario:', id, name);
+    return id;
+}
+
+// ── Load a scenario — swaps allData/viewData to the scenario's copy ──
+function loadScenario(id) {
+    const sc = scenarios[id];
+    if (!sc) { console.warn('[Canopy] Scenario not found:', id); return; }
+
+    // Preserve live data snapshot so we can return to it
+    if (!isScenarioMode) {
+        _liveDataSnapshot = JSON.parse(JSON.stringify(allData));
+    }
+
+    currentScenarioId = id;
+    isScenarioMode    = true;
+    dragUndoStack     = [];
+    dragRedoStack     = [];
+
+    // Rebuild allData from the scenario — re-attach ghost root
+    allData = JSON.parse(JSON.stringify(sc.data));
+    allData.push({ id: 'ROOT', name: 'Organization', isGhost: true, parentId: null });
+
+    // Rebuild dept colors
+    deptCol = {};
+    [...new Set(allData.filter(d => d.department).map(d => d.department))]
+        .forEach((d, i) => { deptCol[d] = PAL[i % PAL.length]; });
+
+    viewData = JSON.parse(JSON.stringify(allData));
+    if (typeof refresh === 'function') refresh(true);
+    console.log('[Canopy] Loaded scenario:', id, sc.name);
+}
+
+// ── Return to live data ──
+function exitScenario() {
+    if (!isScenarioMode || !_liveDataSnapshot) return;
+    allData = JSON.parse(JSON.stringify(_liveDataSnapshot));
+    _liveDataSnapshot = null;
+    currentScenarioId = null;
+    isScenarioMode    = false;
+    dragUndoStack     = [];
+    dragRedoStack     = [];
+
+    deptCol = {};
+    [...new Set(allData.filter(d => d.department).map(d => d.department))]
+        .forEach((d, i) => { deptCol[d] = PAL[i % PAL.length]; });
+
+    viewData = JSON.parse(JSON.stringify(allData));
+    if (typeof refresh === 'function') refresh(true);
+}
+
+// ── Delete a scenario (cannot delete the currently active one) ──
+function deleteScenario(id) {
+    if (currentScenarioId === id) {
+        alert('Exit the scenario before deleting it.');
+        return false;
+    }
+    delete scenarios[id];
+    _persistScenarios();
+    return true;
+}
+
+// ── Auto-save scenario changes whenever commitMove is called (wired in drag.js) ──
+function _autoSaveScenario() {
+    if (!isScenarioMode || !currentScenarioId) return;
+    const sc = scenarios[currentScenarioId];
+    if (!sc) return;
+    sc.data = JSON.parse(JSON.stringify(allData.filter(d => !d.isGhost)));
+    _persistScenarios();
+}
+
+// ── Redo (scenario-aware) ──
+function redoLastMove() {
+    if (!dragRedoStack.length) return;
+    const { id, newParentId } = dragRedoStack.pop();
+    const entry = { id, oldParentId: null, newParentId };
+    [allData, viewData].forEach(arr => {
+        const n = arr.find(d => d.id === id);
+        if (n) { entry.oldParentId = n.parentId; n.parentId = newParentId; }
+    });
+    dragUndoStack.push(entry);
+    if (typeof g === 'function' && g('undoBtn')) g('undoBtn').style.display = 'flex';
+    if (typeof _ssUpdateUndoRedo === 'function') _ssUpdateUndoRedo();
+    _autoSaveScenario();
+    if (typeof _smartRefresh === 'function') _smartRefresh(false); else if (typeof refresh === 'function') refresh(false);
+}
 
 // ── Constants ──
 const PAL = [

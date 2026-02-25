@@ -16,46 +16,145 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 </head>
 <body>
-<div id="appShell">
-    <!-- TOP BAR -->
-    <div id="topBar">
-        <div class="brand">
-            <div class="brand-icon">
-                <svg class="brand-tree" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 3 L19 11 H15 L19 17 H13.5 L13.5 21 H10.5 L10.5 17 H5 L9 11 H5 Z" fill="white" opacity="0.95"/>
-                </svg>
-            </div>
-            <div class="brand-name">Canopy</div>
+
+<!-- ═══════════════════════════════════════════════════════ MAIN NAV -->
+<nav id="mainNav">
+    <div class="nav-brand">
+        <div class="brand-icon">
+            <svg class="brand-tree" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 3 L19 11 H15 L19 17 H13.5 L13.5 21 H10.5 L10.5 17 H5 L9 11 H5 Z" fill="white" opacity="0.95"/>
+            </svg>
         </div>
-        <div id="statPills">
-            <div class="stat-pill"><span class="pill-val" id="statHC">—</span><span class="pill-lbl">Headcount</span></div>
-            <div class="stat-pill"><span class="pill-val" id="statPayroll">—</span><span class="pill-lbl">Payroll</span></div>
-            <div class="stat-pill"><span class="pill-val" id="statAvgSal">—</span><span class="pill-lbl">Avg Salary</span></div>
-            <div class="stat-pill"><span class="pill-val" id="statTenure">—</span><span class="pill-lbl">Avg Tenure</span></div>
-            <div class="stat-pill"><span class="pill-val" id="statSpan">—</span><span class="pill-lbl">Span:1</span></div>
-            <button id="undoBtn" onclick="undoLastMove()" style="display:none;">↩ Undo Move</button>
+        <div class="brand-name">Canopy</div>
+    </div>
+    <div class="nav-links">
+        <button class="nav-link active" id="nlHome"       onclick="showPage('home')">Home</button>
+        <button class="nav-link"        id="nlOrgHealth"  onclick="showPage('orgHealth')">Org Health</button>
+        <button class="nav-link"        id="nlOrgchart"        onclick="showPage('orgchart')">Org Chart</button>
+        <button class="nav-link"        id="nlScenarioStudio"  onclick="showPage('scenarioStudio')">Scenario Studio</button>
+        <button class="nav-link"        id="nlDashboard"       onclick="showPage('dashboard')">Dashboard</button>
+    </div>
+    <div class="nav-actions">
+        <button class="top-btn primary" onclick="toggleAI()">✦ Ask Claude</button>
+    </div>
+</nav>
+
+<!-- ══════════════════════════════════════════════════════ SUB-NAV BAR -->
+<div id="navSubBar">
+    <button id="navBack" class="nav-sub-btn" onclick="navGoBack()">←</button>
+    <button id="navFwd"  class="nav-sub-btn" onclick="navGoFwd()">→</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ PAGE: HOME -->
+<div id="pageHome" class="page active">
+
+    <!-- Hero metric strip -->
+    <div id="homeHero">
+        <div class="hero-metric">
+            <span id="statHC">—</span>
+            <label>Headcount</label>
         </div>
-        <div id="topActions">
-            <button class="top-btn" onclick="toggleControls()">⚙ Controls</button>
-            <button class="top-btn accent" onclick="toggleDashboard()">📊 Dashboard</button>
-            <button class="top-btn primary" onclick="toggleAI()">✦ Ask Claude</button>
+        <div class="hero-metric">
+            <span id="statPayroll">—</span>
+            <label>Payroll</label>
+        </div>
+        <div class="hero-metric">
+            <span id="statAvgSal">—</span>
+            <label>Avg Salary</label>
+        </div>
+        <div class="hero-metric">
+            <span id="statTenure">—</span>
+            <label>Avg Tenure</label>
+        </div>
+        <div class="hero-metric">
+            <span id="statSpan">—</span>
+            <label>Span : 1</label>
+        </div>
+        <div class="hero-metric">
+            <span id="homeHealthScore">—</span>
+            <label>Org Health</label>
+        </div>
+        <div class="hero-actions">
+            <label class="toolbar-upload" for="fileInput">📁 Load Your Data</label>
+            <input type="file" id="fileInput" accept=".csv" style="display:none">
+            <span id="demoBadge" class="demo-badge">Demo Data</span>
         </div>
     </div>
 
-    <!-- CONTROL STRIP -->
-    <div id="controlStrip">
-        <div class="panel">
-            <div class="panel-label">Data</div>
-            <input type="file" id="fileInput" accept=".csv">
-            <div style="display:flex;gap:5px;margin-top:7px;">
-                <input type="text" id="globalSearch" list="namesList" placeholder="Search employee…" style="flex:1;margin-top:0;">
-                <button class="btn btn-blue" onclick="focusEmp(g('globalSearch').value)" style="flex-shrink:0;">Go</button>
-            </div>
-            <div style="display:flex;gap:5px;margin-top:7px;">
-                <button class="btn btn-green" style="flex:1;" onclick="dlCSV()">↓ Export</button>
-                <button class="btn btn-gray"  style="flex:1;" onclick="resetAll()">Reset</button>
-            </div>
+    <!-- Insight cards (4-up) -->
+    <div id="homeCards">
+        <div class="insight-card" id="cardHealth" onclick="showPage('orgHealth')" style="cursor:pointer;">
+            <div class="insight-card-title">Org Health</div>
+            <div class="insight-val" id="cardHealthScore">—</div>
+            <div class="insight-sub" id="cardHealthSub">Load data to see org health signals</div>
+            <div class="insight-list" id="cardHealthList"></div>
+            <div class="oh-card-link">View Details →</div>
         </div>
+        <div class="insight-card" id="cardPerformers">
+            <div class="insight-card-title">Top Performers</div>
+            <div class="insight-val" id="cardTopCount">—</div>
+            <div class="insight-sub" id="cardTopSub">5-star rated employees</div>
+            <div class="insight-list" id="cardTopList"></div>
+        </div>
+        <div class="insight-card" id="cardGrowth">
+            <div class="insight-card-title">Growth</div>
+            <div class="insight-val" id="cardGrowthVal">—</div>
+            <div class="insight-sub" id="cardGrowthSub">Hires in rolling 12 months</div>
+            <div class="insight-list" id="cardGrowthList"></div>
+        </div>
+        <div class="insight-card" id="cardPayroll">
+            <div class="insight-card-title">Payroll by Dept</div>
+            <div class="insight-val" id="cardPayrollVal">—</div>
+            <div class="insight-sub" id="cardPayrollSub">Total annual payroll</div>
+            <div class="insight-list" id="cardPayrollList"></div>
+        </div>
+    </div>
+
+    <!-- Navigation tiles -->
+    <div id="homeTiles">
+        <div class="home-tile" onclick="showPage('orgchart')">
+            <div class="tile-icon">🌳</div>
+            <div class="tile-label">Org Chart</div>
+            <div class="tile-sub">Visualize &amp; edit your org structure — drag-to-reassign, filter by team or department, export to CSV</div>
+        </div>
+        <div class="home-tile" onclick="showPage('dashboard')">
+            <div class="tile-icon">📊</div>
+            <div class="tile-label">Dashboard</div>
+            <div class="tile-sub">Analytics, risk flags, tenure distribution &amp; workforce insights across your organization</div>
+        </div>
+    </div>
+
+</div><!-- /pageHome -->
+
+<!-- ═══════════════════════════════════════════════════════ PAGE: ORG HEALTH -->
+<div id="pageOrgHealth" class="page"></div>
+
+<!-- ═══════════════════════════════════════════════════ PAGE: SCENARIO STUDIO -->
+<div id="pageScenarioStudio" class="page"></div>
+
+<!-- ═══════════════════════════════════════════════════════ PAGE: ORG CHART -->
+<div id="pageOrgchart" class="page">
+
+    <!-- Slim page-level toolbar -->
+    <div id="orgPageTop">
+        <div id="orgToolbarSearch">
+            <div class="toolbar-search-wrap">
+                <input type="text" id="globalSearch" list="namesList" placeholder="Search employee…"
+                       onkeydown="if(event.key==='Enter')focusEmp(this.value)">
+            </div>
+            <button class="toolbar-search-btn" onclick="focusEmp(g('globalSearch').value)">Search</button>
+            <button class="toolbar-clear-btn"  onclick="clearEmpSearch()">Clear</button>
+            <button class="toolbar-reset-btn"  onclick="resetOrgView()">↺ Reset</button>
+        </div>
+        <div id="orgToolbarActions">
+            <button class="top-btn" onclick="toggleControls()">⚙ Controls</button>
+            <button class="toolbar-export" onclick="dlCSV()">↓ Export CSV</button>
+            <button id="undoBtn" onclick="undoLastMove()" style="display:none;">↩ Undo Move</button>
+        </div>
+    </div>
+
+    <!-- Collapsible control strip -->
+    <div id="controlStrip" class="hidden">
         <div class="panel">
             <div class="panel-label">Org Filter</div>
             <select id="filterMode" onchange="toggleFilterUI()">
@@ -65,7 +164,10 @@
             </select>
             <div id="filterUI" style="display:none;">
                 <input type="text" id="filterVal" list="dynList" placeholder="Enter name or dept…" style="margin-top:6px;">
-                <button class="btn btn-violet" style="width:100%;margin-top:7px;" onclick="applyFilter()">Apply Filter</button>
+                <div style="display:flex;gap:5px;margin-top:7px;">
+                    <button class="btn btn-violet" style="flex:1;" onclick="applyFilter()">Apply Filter</button>
+                    <button class="btn btn-gray" onclick="resetAll()">Reset</button>
+                </div>
             </div>
         </div>
         <div class="panel">
@@ -94,7 +196,7 @@
         </div>
     </div>
 
-    <!-- ORG CHART -->
+    <!-- Org chart canvas -->
     <div id="chartWrap">
         <div id="emptyState">
             <div class="ei">🏢</div>
@@ -102,29 +204,11 @@
         </div>
         <div class="chart-container"></div>
     </div>
-</div>
 
-<!-- SPOTLIGHT -->
-<div id="spotlight">
-    <div class="spot-head">
-        <div class="spot-name" id="sName">—</div>
-        <div class="spot-x" onclick="closeSpot()">×</div>
-    </div>
-    <div class="spot-grid">
-        <div class="spot-field full"><div class="sfl">Title</div><div class="sfv" id="sTitle">—</div></div>
-        <div class="spot-field"><div class="sfl">Manager</div><div class="sfv" id="sMgr">—</div></div>
-        <div class="spot-field"><div class="sfl">Department</div><div class="sfv" id="sDept">—</div></div>
-        <div class="spot-field"><div class="sfl">Salary</div><div class="sfv" id="sSal">—</div></div>
-        <div class="spot-field"><div class="sfl">Level</div><div class="sfv" id="sLvl">—</div></div>
-        <div class="spot-field"><div class="sfl">Rating</div><div class="sfv" id="sRating">—</div></div>
-        <div class="spot-field"><div class="sfl">Location</div><div class="sfv" id="sLoc">—</div></div>
-        <div class="spot-field"><div class="sfl">Tenure</div><div class="sfv" id="sTen">—</div></div>
-        <div class="spot-field full"><div class="sfl">Email</div><div class="sfv em" id="sEmail">—</div></div>
-    </div>
-</div>
+</div><!-- /pageOrgchart -->
 
-<!-- DASHBOARD -->
-<div id="dashboard">
+<!-- ═══════════════════════════════════════════════════════ PAGE: DASHBOARD -->
+<div id="pageDashboard" class="page">
     <div id="dashInner">
         <div class="dash-top">
             <div>
@@ -133,10 +217,9 @@
                 <div class="dash-filters">
                     <select id="dDept" onchange="dashFilter('dept')" style="margin-top:0;width:auto;"><option value="">All Departments</option></select>
                     <select id="dMgr"  onchange="dashFilter('team')" style="margin-top:0;width:auto;"><option value="">All Teams</option></select>
-                    <button class="btn btn-gray" onclick="resetAll()">Reset</button>
+                    <button class="toolbar-reset-btn" onclick="resetDashView()">↺ Reset</button>
                 </div>
             </div>
-            <button class="close-dash" onclick="toggleDashboard()">✕ Close</button>
         </div>
         <div class="dash-layout">
             <div class="dash-sidebar">
@@ -171,40 +254,42 @@
             <div class="dash-main">
                 <div class="tab-row">
                     <button class="tab-btn active" onclick="swTab(this,'tChart')">📊 Chart</button>
-                    <button class="tab-btn" onclick="swTab(this,'tRisk')">⚠️ Risk Flags</button>
                     <button class="tab-btn" onclick="swTab(this,'tTenure')">📅 Tenure</button>
                     <button class="tab-btn" onclick="swTab(this,'tGeo')">📍 Locations</button>
                 </div>
                 <div class="tab-pane active" id="tChart">
-                    <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;" id="chartLbl">Click a metric card to drill in</div>
-                    <div style="height:540px;"><canvas id="mainChart"></canvas></div>
-                </div>
-                <div class="tab-pane" id="tRisk" style="max-height:620px;overflow-y:auto;">
-                    <div class="ml" style="margin-bottom:10px;">Organizational Risk Signals</div>
-                    <div id="riskList"></div>
-                </div>
-                <div class="tab-pane" id="tTenure">
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;">
-                        <div>
-                            <div class="ml" style="margin-bottom:12px;">Tenure Distribution</div>
-                            <div id="tenureBars"></div>
-                        </div>
-                        <div>
-                            <div class="ml" style="margin-bottom:12px;">Avg Salary by Job Level</div>
-                            <div id="levelBars"></div>
-                        </div>
+                    <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;flex-shrink:0;" id="chartLbl">Click a metric card to drill in</div>
+                    <div style="flex:1;min-height:0;position:relative;">
+                        <canvas id="mainChart" style="position:absolute;inset:0;width:100%!important;height:100%!important;"></canvas>
                     </div>
                 </div>
-                <div class="tab-pane" id="tGeo">
-                    <div class="ml" style="margin-bottom:12px;">Headcount by Location</div>
-                    <div id="geoList" style="display:grid;grid-template-columns:1fr 1fr;gap:0 22px;"></div>
-                </div>
+                <div class="tab-pane" id="tTenure"></div>
+                <div class="tab-pane" id="tGeo"></div>
             </div>
         </div>
     </div>
+</div><!-- /pageDashboard -->
+
+<!-- ═══════════════════════════════════════════════════════ SPOTLIGHT (fixed) -->
+<div id="spotlight">
+    <div class="spot-head">
+        <div class="spot-name" id="sName">—</div>
+        <div class="spot-x" onclick="closeSpot()">×</div>
+    </div>
+    <div class="spot-grid">
+        <div class="spot-field full"><div class="sfl">Title</div><div class="sfv" id="sTitle">—</div></div>
+        <div class="spot-field"><div class="sfl">Manager</div><div class="sfv" id="sMgr">—</div></div>
+        <div class="spot-field"><div class="sfl">Department</div><div class="sfv" id="sDept">—</div></div>
+        <div class="spot-field"><div class="sfl">Salary</div><div class="sfv" id="sSal">—</div></div>
+        <div class="spot-field"><div class="sfl">Level</div><div class="sfv" id="sLvl">—</div></div>
+        <div class="spot-field"><div class="sfl">Rating</div><div class="sfv" id="sRating">—</div></div>
+        <div class="spot-field"><div class="sfl">Location</div><div class="sfv" id="sLoc">—</div></div>
+        <div class="spot-field"><div class="sfl">Tenure</div><div class="sfv" id="sTen">—</div></div>
+        <div class="spot-field full"><div class="sfl">Email</div><div class="sfv em" id="sEmail">—</div></div>
+    </div>
 </div>
 
-<!-- AI PANEL -->
+<!-- ═══════════════════════════════════════════════════════ AI PANEL (fixed) -->
 <div id="aiPanel">
     <div class="ai-hdr">
         <div class="ai-hdr-row">
@@ -251,13 +336,17 @@
 <datalist id="dynList"></datalist>
 <datalist id="destList"></datalist>
 
-<!-- Scripts: state → csv → chart → dashboard → ai → drag → app -->
+<!-- Scripts: sampleData → state → csv → chart → dashboard → orgHealth → ai → drag → scenarios → scenarioStudio → app -->
+<script src="js/sampleData.js"></script>
 <script src="js/state.js"></script>
 <script src="js/csv.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/dashboard.js"></script>
+<script src="js/orgHealth.js"></script>
 <script src="js/ai.js"></script>
 <script src="js/drag.js"></script>
+<script src="js/scenarios.js"></script>
+<script src="js/scenarioStudio.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
